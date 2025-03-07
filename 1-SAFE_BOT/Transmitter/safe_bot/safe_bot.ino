@@ -15,6 +15,7 @@
 #define BPM_HIGH 120          // High Heart Rate
 
 SoftwareSerial HC12(18, 19); // HC-12 TX Pin, HC-12 RX Pinne MQ4_PIN  34  // Methane sensor (MQ-4) connected to GPIO 34
+const char *ID = "S";
 
 Ticker timer;                    // Create Ticker Object
 volatile bool timerFlag = false; // Flag for Timer Trigger
@@ -64,32 +65,31 @@ void loop()
 
   long irValue = particleSensor.getIR();
 
-  if (checkForBeat(irValue) == true)
+  if (irValue > 50000)
   {
-    // We sensed a beat!
-    long delta = millis() - lastBeat;
-    lastBeat = millis();
-
-    beatsPerMinute = 60 / (delta / 1000.0);
-
-    if (beatsPerMinute < 255 && beatsPerMinute > 20)
+    if (checkForBeat(irValue) == true)
     {
-      rates[rateSpot++] = (byte)beatsPerMinute; // Store this reading in the array
-      rateSpot %= RATE_SIZE;                    // Wrap variable
+      // We sensed a beat!
+      long delta = millis() - lastBeat;
+      lastBeat = millis();
 
-      // Take average of readings
-      beatAvg = 0;
-      for (byte x = 0; x < RATE_SIZE; x++)
-        beatAvg += rates[x];
-      beatAvg /= RATE_SIZE;
+      beatsPerMinute = 60 / (delta / 1000.0);
+
+      if (beatsPerMinute < 255 && beatsPerMinute > 20)
+      {
+        rates[rateSpot++] = (byte)beatsPerMinute; // Store this reading in the array
+        rateSpot %= RATE_SIZE;                    // Wrap variable
+
+        // Take average of readings
+        beatAvg = 0;
+        for (byte x = 0; x < RATE_SIZE; x++)
+          beatAvg += rates[x];
+        beatAvg /= RATE_SIZE;
+      }
     }
+    Serial.print(", Avg BPM=");
+    Serial.print(beatAvg);
   }
-  Serial.print(", Avg BPM=");
-  Serial.print(beatAvg);
-
-  if (irValue < 50000)
-    Serial.print(" No finger?");
-  Serial.println();
 
   if (timerFlag)
   {
@@ -119,21 +119,24 @@ void loop()
     {
       Serial.println("🔥 ALERT: Methane Gas Detected!");
       digitalWrite(BUZZER, HIGH);
-      HC12.write('1');
+      HC12.print(ID);
+      HC12.println("1");
     }
 
     if (co_concentration > CO_THRESHOLD)
     {
       Serial.println("⚠️ ALERT: Carbon Monoxide Detected!");
       digitalWrite(BUZZER, HIGH);
-      HC12.write('2');
+      HC12.print(ID);
+      HC12.println("2");
     }
 
     if (beatAvg > BPM_HIGH || beatAvg < BPM_LOW)
     {
       Serial.println("🚨 ALERT: Abnormal Heart Rate!");
       digitalWrite(BUZZER, HIGH);
-      HC12.write('3');
+      HC12.print(ID);
+      HC12.println("3");
     }
     // Reset Buzzer
     digitalWrite(BUZZER, LOW);
