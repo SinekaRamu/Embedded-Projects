@@ -112,8 +112,7 @@ void loop()
     Serial.print("Carbon Monoxide (MQ-7): ");
     Serial.print(co_concentration);
     Serial.println(" ppm");
-    HC12.print(ID); 
-    HC12.println(", "+String(methane_concentration)+", "+ String(co_concentration)+", " +String(beatAvg));
+    
     Serial.println("----------------------");
     // Check Thresholds
     if (methane_concentration > METHANE_THRESHOLD)
@@ -123,21 +122,22 @@ void loop()
       HC12.print(ID);
       HC12.println("1");
     }
-
-    if (co_concentration > CO_THRESHOLD)
+    else if (co_concentration > CO_THRESHOLD)
     {
       Serial.println("⚠️ ALERT: Carbon Monoxide Detected!");
       digitalWrite(BUZZER, HIGH);
       HC12.print(ID);
       HC12.println("2");
     }
-
-    if (beatAvg > BPM_HIGH || beatAvg < BPM_LOW)
+    else if (beatAvg > BPM_HIGH || beatAvg < BPM_LOW)
     {
       Serial.println("🚨 ALERT: Abnormal Heart Rate!");
       digitalWrite(BUZZER, HIGH);
       HC12.print(ID);
       HC12.println("3");
+    }else{
+      HC12.print(ID); 
+      HC12.println(", "+String(methane_concentration)+", "+ String(co_concentration)+", " +String(beatAvg));
     }
     // Reset Buzzer
     digitalWrite(BUZZER, LOW);

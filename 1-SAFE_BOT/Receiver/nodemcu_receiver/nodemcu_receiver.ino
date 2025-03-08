@@ -110,23 +110,29 @@ void loop() {
       Serial.println(command);
 
       if (command == '1') {
+        digitalWrite(Methane, LOW);
+        methaneDetected = true;
         lcd.clear();
         lcd.setCursor(0, 0);
-        lcd.print("Methene detected");
-        Serial.println("Methene detected");
-        digitalWrite(Methane, LOW);
+        lcd.print("Methane detected");
+        Serial.println("Methane detected");
+        delay(2000);
       } else if (command == '2') {
+        digitalWrite(CO, LOW);
+        coDetected = true;
         lcd.clear();
         lcd.setCursor(0, 0);
         lcd.print("CO detected");
         Serial.println("CO detected");
-        digitalWrite(CO, LOW);
+        delay(2000);
       } else if (command == '3') {
+        digitalWrite(HeartRate, LOW);
+        heartRateDetected = true;
         lcd.clear();
         lcd.setCursor(0, 0);
         lcd.print("pulse unstable");
         Serial.println("Heart pulse");
-        digitalWrite(HeartRate, LOW);
+        delay(3000);
       }
       lastDataTime = millis(); // Reset timer
       dataReceived = true;     // Data detected
@@ -135,9 +141,9 @@ void loop() {
 
   // Check if timeout expired
   if (!dataReceived && (millis() - lastDataTime > dataTimeout)) {
-    digitalWrite(Methane, HIGH);
-    digitalWrite(CO, HIGH);
-    digitalWrite(HeartRate, HIGH);
+    if (!methaneDetected) digitalWrite(Methane, HIGH);
+    if (!coDetected) digitalWrite(CO, HIGH);
+    if (!heartRateDetected) digitalWrite(HeartRate, HIGH);
   }
 
 }

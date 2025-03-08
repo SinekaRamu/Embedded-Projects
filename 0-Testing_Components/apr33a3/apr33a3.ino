@@ -2,7 +2,7 @@ void setup()
 {
   Serial.begin(115200);
 
-  pinMode(D2, OUTPUT);
+  pinMode(D3, OUTPUT);
   pinMode(D5, OUTPUT);
   pinMode(D6, OUTPUT);
   Serial.println("begin");
@@ -24,7 +24,7 @@ void loop()
     Serial.println(value);
     if (value == '1')
     {
-      digitalWrite(D2, LOW);
+      digitalWrite(D3, LOW);
     }
     else if (value == '2')
     {
