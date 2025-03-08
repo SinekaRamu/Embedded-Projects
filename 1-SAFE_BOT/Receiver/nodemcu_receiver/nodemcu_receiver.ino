@@ -1,5 +1,11 @@
 #include <SoftwareSerial.h>
 #include <ESP8266WiFi.h>
+#include <Wire.h>
+#include <LiquidCrystal_I2C.h>
+
+#define Methane D3
+#define CO D6
+#define HeartRate D5
 
 SoftwareSerial HC12(D7, D8); // D7- HC-12 TX Pin,D8- HC-12 RX Pin
 const char* ID = "S";
@@ -11,10 +17,19 @@ WiFiServer server(80);
 unsigned long lastDataTime = 0; // Timer to track last received data
 const unsigned long dataTimeout = 3000; // Timeout duration in milliseconds (5 seconds)
 
+// LCD Setup (16x2)
+LiquidCrystal_I2C lcd(0x27, 16, 2);
+
 void setup()
 {
   Serial.begin(9600); // Serial port to computer
   HC12.begin(9600);   // Serial port to HC12
+
+  lcd.init();
+  lcd.backlight();
+
+  lcd.setCursor(0, 0);
+  lcd.print("System Initializing");
 
   Serial.print("Connecting to ");
   Serial.println(ssid);
@@ -32,35 +47,86 @@ void setup()
   Serial.println("IP address: ");
   Serial.println(WiFi.localIP());
 
-  pinMode(D1, OUTPUT);
-  pinMode(D2, OUTPUT);
-  pinMode(D5, OUTPUT);
+  pinMode(Methane, OUTPUT);
+  pinMode(CO, OUTPUT);
+  pinMode(HeartRate, OUTPUT);
 
-  digitalWrite(D1, HIGH);
-  digitalWrite(D2, HIGH);
-  digitalWrite(D5, HIGH);
+  digitalWrite(Methane, HIGH);
+  digitalWrite(CO, HIGH);
+  digitalWrite(HeartRate, HIGH);
+
+  delay(2000);
+  lcd.clear();
+  lcd.setCursor(0, 0);
+  lcd.print("  SAFE-BOT");
 }
 
 void loop() {
   bool dataReceived = false; // Flag to detect data availability
+  bool methaneDetected = false;
+  bool coDetected = false;
+  bool heartRateDetected = false;
 
   if (HC12.available()) {
     String receivedMessage = HC12.readStringUntil('\n');
     receivedMessage.trim(); // Remove any white spaces or newline characters
+    
+    if (receivedMessage.startsWith("S,")) {
+      receivedMessage = receivedMessage.substring(2); // Remove "S," from the string
 
+      Serial.println("Raw Data: " + receivedMessage);
+      // Raw Data: 253.00, 34.00, 74
+
+      char* token = strtok((char*)receivedMessage.c_str(), ",");
+      int index = 0;
+      String methaneStr, coStr, beatAvgStr;
+
+      while (token != NULL) {
+        if (index == 0) {
+          methaneStr = token;
+        } else if (index == 1) {
+          coStr = token;
+        } else if (index == 2) {
+          beatAvgStr = token;
+        }
+        token = strtok(NULL, ",");
+        index++;
+      }
+
+      // Print on LCD
+      lcd.clear();
+      lcd.setCursor(0, 0);
+      lcd.print("CH4:" + methaneStr);
+      lcd.setCursor(0, 1);
+      lcd.print("CO:" + coStr);
+
+      // Optionally, print heart rate on the next line if you have a larger LCD
+      lcd.setCursor(10, 1);
+      lcd.print("HR:" + beatAvgStr);
+    }
+  
     if (receivedMessage.startsWith(ID)) {
       char command = receivedMessage.charAt(1);
       Serial.println(command);
 
       if (command == '1') {
+        lcd.clear();
+        lcd.setCursor(0, 0);
+        lcd.print("Methene detected");
         Serial.println("Methene detected");
-        digitalWrite(D1, LOW);
+        digitalWrite(Methane, LOW);
       } else if (command == '2') {
+        lcd.clear();
+        lcd.setCursor(0, 0);
+        lcd.print("CO detected");
         Serial.println("CO detected");
-        digitalWrite(D2, LOW);
+        digitalWrite(CO, LOW);
       } else if (command == '3') {
+        lcd.clear();
+        lcd.setCursor(0, 0);
+        lcd.print("pulse unstable");
         Serial.println("Heart pulse");
-        digitalWrite(D5, LOW);
+        digitalWrite(HeartRate, LOW);
       }
       lastDataTime = millis(); // Reset timer
       dataReceived = true;     // Data detected
@@ -69,10 +135,9 @@ void loop() {
 
   // Check if timeout expired
   if (!dataReceived && (millis() - lastDataTime > dataTimeout)) {
-    Serial.println("No data, turning OFF audio");
-    digitalWrite(D1, HIGH);
-    digitalWrite(D2, HIGH);
-    digitalWrite(D5, HIGH);
+    digitalWrite(Methane, HIGH);
+    digitalWrite(CO, HIGH);
+    digitalWrite(HeartRate, HIGH);
   }
 
 }

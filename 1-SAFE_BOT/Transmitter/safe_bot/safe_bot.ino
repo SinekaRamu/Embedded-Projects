@@ -112,7 +112,8 @@ void loop()
     Serial.print("Carbon Monoxide (MQ-7): ");
     Serial.print(co_concentration);
     Serial.println(" ppm");
-
+    HC12.print(ID); 
+    HC12.println(", "+String(methane_concentration)+", "+ String(co_concentration)+", " +String(beatAvg));
     Serial.println("----------------------");
     // Check Thresholds
     if (methane_concentration > METHANE_THRESHOLD)
