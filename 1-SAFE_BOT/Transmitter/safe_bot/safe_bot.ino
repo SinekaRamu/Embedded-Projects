@@ -43,7 +43,7 @@ void setup()
   Wire.begin(); // Initialize I2C
   pinMode(BUZZER, OUTPUT);
 
-  timer.attach(2.0, timerISR); // Call ISR every 1 second
+  timer.attach(3.0, timerISR); // Call ISR every 1 second
   Serial.println("Timer Initialized");
 
   // Initialize MAX30102
@@ -62,7 +62,7 @@ void setup()
 
 void loop()
 {
-
+  
   long irValue = particleSensor.getIR();
 
   if (irValue > 50000)
