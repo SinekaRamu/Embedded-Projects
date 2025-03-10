@@ -3,11 +3,11 @@
 #include <Wire.h>
 #include <LiquidCrystal_I2C.h>
 
-#define Methane D3
-#define CO D6
-#define HeartRate D5
+#define Methane D0   //GPIO 16
+#define CO D6        //GPIO 12
+#define HeartRate D5 //GPIO 14
 
-SoftwareSerial HC12(D7, D8); // D7- HC-12 TX Pin,D8- HC-12 RX Pin
+SoftwareSerial HC12(D7, D0); // D7(GPIO 13)- HC-12 TX Pin,D8(GPIO 15)- HC-12 RX Pin
 const char* ID = "S";
 
 const char* ssid = "Airtel_bala_4993";
@@ -102,7 +102,7 @@ void loop() {
 
       // Optionally, print heart rate on the next line if you have a larger LCD
       lcd.setCursor(10, 1);
-      lcd.print("HR:" + beatAvgStr);
+      lcd.print(beatAvgStr==" 0"? "HR: NO":("HR:"+beatAvgStr));
     }
   
     if (receivedMessage.startsWith(ID)) {

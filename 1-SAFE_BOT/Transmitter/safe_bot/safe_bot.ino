@@ -7,7 +7,6 @@
 
 #define MQ4_PIN 34 // Methane sensor (MQ-4) connected to GPIO 34
 #define MQ7_PIN 35 // Carbon Monoxide sensor (MQ-7) connected to GPIO 35
-#define BUZZER 4
 
 #define METHANE_THRESHOLD 900 // ppm - Dangerous level
 #define CO_THRESHOLD 200      // ppm - Dangerous level
@@ -30,6 +29,9 @@ long lastBeat = 0; // Time at which the last beat occurred
 float beatsPerMinute;
 int beatAvg;
 
+unsigned long lastDataTime = 0; // Timer to track last received data
+const unsigned long dataTimeout = 3000; // Timeout duration in milliseconds (5 seconds)
+
 void timerISR()
 {
   timerFlag = true; // Set the flag every second
@@ -41,7 +43,6 @@ void setup()
   HC12.begin(9600);
 
   Wire.begin(); // Initialize I2C
-  pinMode(BUZZER, OUTPUT);
 
   timer.attach(3.0, timerISR); // Call ISR every 1 second
   Serial.println("Timer Initialized");
@@ -63,9 +64,11 @@ void setup()
 void loop()
 {
   
+  bool dataReceived = false;
   long irValue = particleSensor.getIR();
 
-  if (irValue > 50000)
+  // Measure heart rate
+  if (irValue > 50000) // Check if finger is placed on the sensor
   {
     if (checkForBeat(irValue) == true)
     {
@@ -87,8 +90,23 @@ void loop()
         beatAvg /= RATE_SIZE;
       }
     }
-    Serial.print(", Avg BPM=");
-    Serial.print(beatAvg);
+    else
+    {
+      // No beat detected, but finger is still on the sensor
+      // Calculate BPM based on time since the last beat
+      long timeSinceLastBeat = millis() - lastBeat;
+      if (timeSinceLastBeat > 2000) // If no beat for 2 seconds, assume BPM is 0
+      {
+        beatsPerMinute = 0;
+        beatAvg = 0;
+      }
+    }
+  }
+  else
+  {
+    // Finger is not on the sensor
+    beatsPerMinute = 0;
+    beatAvg = 0;
   }
 
   if (timerFlag)
@@ -112,34 +130,29 @@ void loop()
     Serial.print("Carbon Monoxide (MQ-7): ");
     Serial.print(co_concentration);
     Serial.println(" ppm");
-    
+    HC12.print(ID); 
+    HC12.println(", "+String(methane_concentration)+", "+ String(co_concentration)+", " +String(beatAvg));
     Serial.println("----------------------");
     // Check Thresholds
     if (methane_concentration > METHANE_THRESHOLD)
     {
       Serial.println("🔥 ALERT: Methane Gas Detected!");
-      digitalWrite(BUZZER, HIGH);
       HC12.print(ID);
       HC12.println("1");
     }
     else if (co_concentration > CO_THRESHOLD)
     {
       Serial.println("⚠️ ALERT: Carbon Monoxide Detected!");
-      digitalWrite(BUZZER, HIGH);
       HC12.print(ID);
       HC12.println("2");
     }
-    else if (beatAvg > BPM_HIGH || beatAvg < BPM_LOW)
+    else if (beatAvg !=0 && (beatAvg > BPM_HIGH || beatAvg < BPM_LOW))
     {
       Serial.println("🚨 ALERT: Abnormal Heart Rate!");
-      digitalWrite(BUZZER, HIGH);
       HC12.print(ID);
       HC12.println("3");
-    }else{
-      HC12.print(ID); 
-      HC12.println(", "+String(methane_concentration)+", "+ String(co_concentration)+", " +String(beatAvg));
     }
-    // Reset Buzzer
-    digitalWrite(BUZZER, LOW);
+      
+
   }
 }
