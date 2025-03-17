@@ -7,9 +7,10 @@
 
 #define MQ4_PIN 34 // Methane sensor (MQ-4) connected to GPIO 34
 #define MQ7_PIN 35 // Carbon Monoxide sensor (MQ-7) connected to GPIO 35
+#define BUZZER 4
 
-#define METHANE_THRESHOLD 900 // ppm - Dangerous level
-#define CO_THRESHOLD 200      // ppm - Dangerous level
+#define METHANE_THRESHOLD 500 // ppm - Dangerous level
+#define CO_THRESHOLD 400      // ppm - Dangerous level
 #define BPM_LOW 50            // Low Heart Rate
 #define BPM_HIGH 120          // High Heart Rate
 
@@ -35,6 +36,8 @@ const unsigned long dataTimeout = 3000; // Timeout duration in milliseconds (5 s
 void timerISR()
 {
   timerFlag = true; // Set the flag every second
+  digitalWrite(BUZZER, LOW);
+
 }
 
 void setup()
@@ -43,6 +46,7 @@ void setup()
   HC12.begin(9600);
 
   Wire.begin(); // Initialize I2C
+  pinMode(BUZZER, OUTPUT);
 
   timer.attach(3.0, timerISR); // Call ISR every 1 second
   Serial.println("Timer Initialized");
@@ -139,20 +143,23 @@ void loop()
       Serial.println("🔥 ALERT: Methane Gas Detected!");
       HC12.print(ID);
       HC12.println("1");
+      digitalWrite(BUZZER, HIGH);
+
     }
     else if (co_concentration > CO_THRESHOLD)
     {
       Serial.println("⚠️ ALERT: Carbon Monoxide Detected!");
       HC12.print(ID);
       HC12.println("2");
+      digitalWrite(BUZZER, HIGH);
+
     }
     else if (beatAvg !=0 && (beatAvg > BPM_HIGH || beatAvg < BPM_LOW))
     {
       Serial.println("🚨 ALERT: Abnormal Heart Rate!");
       HC12.print(ID);
       HC12.println("3");
+      digitalWrite(BUZZER, HIGH);
     }
-      
-
   }
 }

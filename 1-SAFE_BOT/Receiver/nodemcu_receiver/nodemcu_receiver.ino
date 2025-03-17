@@ -1,4 +1,7 @@
 #include <SoftwareSerial.h>
+#include <WiFiClient.h> 
+#include <ESP8266WebServer.h>
+#include <ESP8266HTTPClient.h>
 #include <ESP8266WiFi.h>
 #include <Wire.h>
 #include <LiquidCrystal_I2C.h>
@@ -12,6 +15,7 @@ const char* ID = "S";
 
 const char* ssid = "Airtel_bala_4993";
 const char* password = "air70386";
+String serverURL = "https://webroid.in/demo/idhayaattendance/register.php";
 
 WiFiServer server(80);
 unsigned long lastDataTime = 0; // Timer to track last received data
@@ -19,6 +23,8 @@ const unsigned long dataTimeout = 3000; // Timeout duration in milliseconds (5 s
 
 // LCD Setup (16x2)
 LiquidCrystal_I2C lcd(0x27, 16, 2);
+WiFiClientSecure client;
+HTTPClient http;
 
 void setup()
 {
@@ -101,8 +107,9 @@ void loop() {
       lcd.print("CO:" + coStr);
 
       // Optionally, print heart rate on the next line if you have a larger LCD
-      lcd.setCursor(10, 1);
-      lcd.print(beatAvgStr==" 0"? "HR: NO":("HR:"+beatAvgStr));
+      lcd.setCursor(9, 1);
+      lcd.print(beatAvgStr==" 0"? " HR: NO":(" HR:"+beatAvgStr));
+      postData(methaneStr, coStr, beatAvgStr);
     }
   
     if (receivedMessage.startsWith(ID)) {
@@ -146,4 +153,58 @@ void loop() {
     if (!heartRateDetected) digitalWrite(HeartRate, HIGH);
   }
 
+}
+
+bool postData(String methane, String co, String beatAvg) {
+    client.setInsecure();
+
+    http.begin(client, attendanceURL);  
+    http.addHeader("Content-Type", "application/x-www-form-urlencoded");
+
+    String postData = "meth=" + String(methane)+"co="+String(co)+"beatAvg"+"";
+    int httpCode = http.POST(postData);
+    String response = http.getString();
+
+    Serial.println("HTTP Code: " + String(httpCode));
+    Serial.println("Server Response: " + response);
+
+    // **Check for Connection Failure**
+    if (httpCode == -1) {
+        Serial.println("⚠️ Connection failed!");
+        DisplayMessage("Conn Failed!", "Retry");
+        http.end();
+        return false;
+    }
+
+    // **Check if the Server Responded**
+    if (httpCode != 200) {
+        Serial.println("⚠️ Server Error: " + String(httpCode));
+        DisplayMessage("Server Error", String(httpCode));
+        http.end();
+        return false;
+    }
+
+    // **Parse JSON Response**
+    DynamicJsonDocument doc(512);
+    DeserializationError error = deserializeJson(doc, response);
+
+    if (error) {
+        Serial.print("⚠️ JSON Parsing Error: ");
+        Serial.println(error.c_str());
+        DisplayMessage("JSON Error", "Invalid Data");
+        http.end();
+        return false;
+    }
+
+    // **Extract JSON Values**
+    String status = doc["status"].as<String>();
+    String message = doc["message"].as<String>();
+
+    // **Display Message on OLED**
+    DisplayMessage(status, message);
+
+    http.end();  // **Close HTTP Connection**
+    
+    // **Return false if an error occurred**
+    return (status != "error");
 }
