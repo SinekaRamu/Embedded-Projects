@@ -10,6 +10,10 @@
 
 - Receiver side send the data to the cloud for future references.
 
+### march 18
+
+converted ESP32 to Arduino nano in the transmitter side.
+
 ## References
 
 - [max30102](https://circuitdigest.com/microcontroller-projects/how-max30102-pulse-oximeter-and-heart-rate-sensor-works-and-how-to-interface-with-arduino)
