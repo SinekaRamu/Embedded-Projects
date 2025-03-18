@@ -6,6 +6,7 @@
 #include <Wire.h>
 #include <LiquidCrystal_I2C.h>
 
+#define DEVICE_NAME "safe1234"
 #define Methane D0   //GPIO 16
 #define CO D6        //GPIO 12
 #define HeartRate D5 //GPIO 14
@@ -15,15 +16,15 @@ const char* ID = "S";
 
 const char* ssid = "Airtel_bala_4993";
 const char* password = "air70386";
-String serverURL = "https://webroid.in/demo/idhayaattendance/register.php";
+String serverUrl = "http://192.168.1.3/safebot/insert_data.php";
 
 WiFiServer server(80);
 unsigned long lastDataTime = 0; // Timer to track last received data
-const unsigned long dataTimeout = 3000; // Timeout duration in milliseconds (5 seconds)
+const unsigned long dataTimeout = 5000; // Timeout duration in milliseconds (5 seconds)
 
 // LCD Setup (16x2)
 LiquidCrystal_I2C lcd(0x27, 16, 2);
-WiFiClientSecure client;
+// WiFiClientSecure client;
 HTTPClient http;
 
 void setup()
@@ -61,10 +62,10 @@ void setup()
   digitalWrite(CO, HIGH);
   digitalWrite(HeartRate, HIGH);
 
-  delay(2000);
   lcd.clear();
   lcd.setCursor(0, 0);
   lcd.print("  SAFE-BOT");
+  delay(2000);
 }
 
 void loop() {
@@ -102,13 +103,13 @@ void loop() {
       // Print on LCD
       lcd.clear();
       lcd.setCursor(0, 0);
-      lcd.print("CH4:" + methaneStr);
+      lcd.print("CH4: " + methaneStr);
       lcd.setCursor(0, 1);
       lcd.print("CO:" + coStr);
 
       // Optionally, print heart rate on the next line if you have a larger LCD
       lcd.setCursor(9, 1);
-      lcd.print(beatAvgStr==" 0"? " HR: NO":(" HR:"+beatAvgStr));
+      lcd.print(beatAvgStr=="0"? " HR: NO":(" HR: "+beatAvgStr));
       postData(methaneStr, coStr, beatAvgStr);
     }
   
@@ -155,56 +156,35 @@ void loop() {
 
 }
 
-bool postData(String methane, String co, String beatAvg) {
-    client.setInsecure();
+void postData(String methane, String co, String heartRate) {
+    // client.setInsecure();
 
-    http.begin(client, attendanceURL);  
+    if (WiFi.status() == WL_CONNECTED) {
+    WiFiClient client;
+    HTTPClient http;
+    http.begin(client, serverUrl);
     http.addHeader("Content-Type", "application/x-www-form-urlencoded");
 
-    String postData = "meth=" + String(methane)+"co="+String(co)+"beatAvg"+"";
-    int httpCode = http.POST(postData);
-    String response = http.getString();
+    // Sensor Data
+    String deviceToken = DEVICE_NAME;
 
-    Serial.println("HTTP Code: " + String(httpCode));
+    // Format Data
+    String postData = "device_token=" + String(DEVICE_NAME) + 
+                      "&methane=" + methane + 
+                      "&co=" + co + 
+                      "&heart_rate=" + heartRate;
+
+    // Send HTTP POST Request
+    int httpResponseCode = http.POST(postData);
+    Serial.print("HTTP Response Code: ");
+    Serial.println(httpResponseCode);
+
+    // Read Response
+    String response = http.getString();
     Serial.println("Server Response: " + response);
 
-    // **Check for Connection Failure**
-    if (httpCode == -1) {
-        Serial.println("⚠️ Connection failed!");
-        DisplayMessage("Conn Failed!", "Retry");
-        http.end();
-        return false;
-    }
-
-    // **Check if the Server Responded**
-    if (httpCode != 200) {
-        Serial.println("⚠️ Server Error: " + String(httpCode));
-        DisplayMessage("Server Error", String(httpCode));
-        http.end();
-        return false;
-    }
-
-    // **Parse JSON Response**
-    DynamicJsonDocument doc(512);
-    DeserializationError error = deserializeJson(doc, response);
-
-    if (error) {
-        Serial.print("⚠️ JSON Parsing Error: ");
-        Serial.println(error.c_str());
-        DisplayMessage("JSON Error", "Invalid Data");
-        http.end();
-        return false;
-    }
-
-    // **Extract JSON Values**
-    String status = doc["status"].as<String>();
-    String message = doc["message"].as<String>();
-
-    // **Display Message on OLED**
-    DisplayMessage(status, message);
-
-    http.end();  // **Close HTTP Connection**
-    
-    // **Return false if an error occurred**
-    return (status != "error");
+    http.end();
+  } else {
+    Serial.println("WiFi Not Connected!");
+  }
 }

@@ -1,6 +1,6 @@
-# Abstract 
+# Abstract
 
-Display the status received from the sensors and alert the supervisor if something goes wrong. 
+Display the status received from the sensors and alert the supervisor if something goes wrong.
 
 ## Components
 
@@ -14,3 +14,6 @@ Display the status received from the sensors and alert the supervisor if somethi
 
 <img src="../Resources/receiver_bd.png" alt="node mcu with components">
 
+## Future scope
+
+Datas are pushed to the cloud server for future use.

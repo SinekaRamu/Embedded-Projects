@@ -120,7 +120,7 @@ void loop() {
     Serial.println(beatAvg);
 
     HC12.print(ID);
-    HC12.println(", " + String(methane_concentration) + "," + String(co_concentration) + ", " + String(beatAvg));
+    HC12.println("," + String(methane_concentration) + "," + String(co_concentration) + "," + String(beatAvg));
 
     Serial.println("----------------------");
 
