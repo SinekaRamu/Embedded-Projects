@@ -9,7 +9,7 @@
 #define MQ7_PIN A1 // Carbon Monoxide sensor (MQ-7) connected to A1
 #define BUZZER 4
 
-#define METHANE_THRESHOLD 500
+#define METHANE_THRESHOLD 700
 #define CO_THRESHOLD 300
 #define BPM_LOW 50
 #define BPM_HIGH 120
@@ -101,10 +101,10 @@ void loop() {
     timerFlag = false;
 
     int mq4_value = analogRead(MQ4_PIN);
-    float methane_concentration = map(mq4_value, 0, 1023, 0, 1000);
+    int methane_concentration = map(mq4_value, 0, 1023, 0, 1000);
 
     int mq7_value = analogRead(MQ7_PIN);
-    float co_concentration = map(mq7_value, 0, 1023, 0, 1000);
+    int co_concentration = map(mq7_value, 0, 1023, 0, 1000);
 
     Serial.println("Timer Interrupt Triggered");
 
@@ -116,12 +116,17 @@ void loop() {
     Serial.print(co_concentration);
     Serial.println(" ppm");
 
+    HC12.print(ID);
+    HC12.print(",");
+    HC12.print(methane_concentration);
+    HC12.print(",");
+    HC12.print(co_concentration);
+    HC12.print(",");
+    HC12.print(beatAvg);
+    HC12.println("");
+    delay(50);
     Serial.print("Avg BPM=");
     Serial.println(beatAvg);
-
-    HC12.print(ID);
-    HC12.println("," + String(methane_concentration) + "," + String(co_concentration) + "," + String(beatAvg));
-
     Serial.println("----------------------");
 
     if (methane_concentration > METHANE_THRESHOLD) {

@@ -71,3 +71,8 @@ Components used in Transmitter side
 8. Conclusion
 
 This system provides an efficient, real-time solution for deploying drones in the event of earthquakes. By leveraging vibration detection, wireless communication, and stabilization techniques, this project can improve emergency response and disaster management efforts.
+
+## Important
+
+- Constant Current: 30A (Max 40A<10s). BEC: 5V 3A. Input Voltage: 11.1 ~ 11.7 V. Li-Po battery: 2S ~ 3S
+- Giving 12 V damaged the four esc and BLDC motor

@@ -12,7 +12,7 @@ SoftwareSerial HC12(10, 11); // HC-12 TX Pin, HC-12 RX Pin
 Servo motor1, motor2, motor3, motor4;
 const char *myDroneID = "A"; // Unique ID for this receiver
 bool isFlying = false;
-unsigned long lastSendTime = 0; 
+unsigned long lastSendTime = 0;
 
 // MPU6050 Address
 #define MPU 0x68
@@ -31,12 +31,6 @@ void setup()
     motor3.attach(6);
     motor4.attach(9);
 
-    // Send min throttle signal to arm ESCs
-    motor1.writeMicroseconds(1000);
-    motor2.writeMicroseconds(1000);
-    motor3.writeMicroseconds(1000);
-    motor4.writeMicroseconds(1000);
-    delay(3000);
     Serial.println("Drone Ready!");
 
     pinMode(13, OUTPUT);
@@ -69,7 +63,7 @@ void stopMotors()
 {
     int throttle;
     // Gradually decrease throttle (simulate landing)
-    for (throttle = 1100; throttle >= 1000; throttle -= 50)
+    for (throttle = 1100; throttle >= 1000; throttle -= 10)
     {
         motor1.writeMicroseconds(throttle);
         motor2.writeMicroseconds(throttle);
@@ -89,7 +83,7 @@ void startMotors()
     int throttle;
 
     // Gradually increase throttle for all motors
-    for (throttle = 1000; throttle <= 1100; throttle += 50)
+    for (throttle = 1000; throttle <= 1100; throttle += 5)
     {
         motor1.writeMicroseconds(throttle);
         motor2.writeMicroseconds(throttle);
@@ -104,7 +98,7 @@ void startMotors()
 
 void loop()
 {
-    readMPU6050();  // Read sensor data
+    readMPU6050(); // Read sensor data
     // sendSensorData();
     if (HC12.available())
     {
@@ -116,7 +110,7 @@ void loop()
         {                                             // Check if message is for this drone
             char command = receivedMessage.charAt(1); // Get the command (1 or 2)
 
-            if (command == '1'  && !isFlying)
+            if (command == '1' && !isFlying)
             {
                 isFlying = true;
                 Serial.println("Taking Off...");

@@ -14,17 +14,25 @@
 SoftwareSerial HC12(D7, D0); // D7(GPIO 13)- HC-12 TX Pin,D8(GPIO 15)- HC-12 RX Pin
 const char* ID = "S";
 
-const char* ssid = "Airtel_bala_4993";
-const char* password = "air70386";
-String serverUrl = "http://192.168.1.3/safebot/insert_data.php";
+const char* ssid = "gokula"; 
+const char* password = "gokul123";
+String serverUrl = "https://ediylabs.com/demo/safebot/inser_data.php";
+
+// Store latest sensor values
+String lastMethane = "0";
+String lastCO = "0";
+String lastHeartRate = "0";
 
 WiFiServer server(80);
 unsigned long lastDataTime = 0; // Timer to track last received data
 const unsigned long dataTimeout = 5000; // Timeout duration in milliseconds (5 seconds)
 
+unsigned long lastPostTime = 0; // Track last post time
+const unsigned long postInterval = 30000; // 30 seconds
+
 // LCD Setup (16x2)
 LiquidCrystal_I2C lcd(0x27, 16, 2);
-// WiFiClientSecure client;
+WiFiClientSecure client;
 HTTPClient http;
 
 void setup()
@@ -95,6 +103,7 @@ void loop() {
           coStr = token;
         } else if (index == 2) {
           beatAvgStr = token;
+  
         }
         token = strtok(NULL, ",");
         index++;
@@ -105,12 +114,15 @@ void loop() {
       lcd.setCursor(0, 0);
       lcd.print("CH4: " + methaneStr);
       lcd.setCursor(0, 1);
-      lcd.print("CO:" + coStr);
+      lcd.print("CO: " + coStr);
 
       // Optionally, print heart rate on the next line if you have a larger LCD
-      lcd.setCursor(9, 1);
-      lcd.print(beatAvgStr=="0"? " HR: NO":(" HR: "+beatAvgStr));
-      postData(methaneStr, coStr, beatAvgStr);
+      lcd.setCursor(8, 1);
+      lcd.print(" HR: "+beatAvgStr);
+      
+      lastMethane = methaneStr;
+      lastCO = coStr;
+      lastHeartRate = beatAvgStr;
     }
   
     if (receivedMessage.startsWith(ID)) {
@@ -154,14 +166,20 @@ void loop() {
     if (!heartRateDetected) digitalWrite(HeartRate, HIGH);
   }
 
+  // ⏳ **Post data every 30 seconds**
+  if (millis() - lastPostTime >= postInterval) {
+    lastPostTime = millis(); // Update timer
+    postData(lastMethane, lastCO, lastHeartRate); // Send last received values
+  }
+
 }
 
 void postData(String methane, String co, String heartRate) {
-    // client.setInsecure();
+    client.setInsecure();
 
     if (WiFi.status() == WL_CONNECTED) {
-    WiFiClient client;
-    HTTPClient http;
+    // WiFiClient client;
+    // HTTPClient http;
     http.begin(client, serverUrl);
     http.addHeader("Content-Type", "application/x-www-form-urlencoded");
 

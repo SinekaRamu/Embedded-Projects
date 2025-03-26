@@ -97,6 +97,9 @@ void SendDataToDrone(int currentState)
     {
         HC12.print(droneID);
         HC12.println("2");
+        lcd.clear();
+        lcd.setCursor(0, 0);
+        lcd.print("Landing...");
         receiveMPUData();
     }else if (currentState == HIGH)
     {
