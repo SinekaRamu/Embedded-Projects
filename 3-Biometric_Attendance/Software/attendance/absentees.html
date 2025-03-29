@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Absentees List</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.datatables.net/1.10.22/css/jquery.dataTables.min.css"
+    />
+    <script src="https://code.jquery.com/jquery-3.5.1.js"></script>
+    <script src="https://cdn.datatables.net/1.10.22/js/jquery.dataTables.min.js"></script>
+    <style>
+      body {
+        /* background: rgb(87, 13, 88);
+        background: radial-gradient(
+          at bottom right,
+          rgba(67, 14, 68, 1) 0%,
+          rgba(7, 5, 29, 0.714) 35%,
+          rgba(31, 4, 96, 1) 100%
+        ); */
+        background-image: url("../assets/background.jpg");
+        background-size: cover; /* Makes sure the image covers the entire background */
+        background-position: center; /* Keeps the image centered */
+        background-attachment: fixed;
+      }
+      h2,
+      label,
+      input {
+        color: #fff;
+      }
+
+      .dataTables_wrapper,
+      .dataTables_info,
+      .dataTables_paginate,
+      .dataTables_length select {
+        color: #fff !important;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container mt-5">
+      <h2 class="text-center mb-4">Absentees List</h2>
+
+      <!-- Filters -->
+      <div class="row mb-3">
+        <div class="col-md-3">
+          <label for="date" class="form-label">Select Date</label>
+          <input type="date" id="date" class="form-control" value="" />
+        </div>
+        <div class="col-md-3">
+          <label for="department" class="form-label">Department</label>
+          <select id="department" class="form-control">
+            <option value="B.Sc">B.Sc</option>
+          </select>
+        </div>
+        <div class="col-md-3">
+          <label for="section" class="form-label">Section</label>
+          <select id="section" class="form-control">
+            <option value="A">A</option>
+            <option value="B">B</option>
+          </select>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label d-block">&nbsp;</label>
+          <button
+            style="
+              background-color: #9b33c1;
+              color: white;
+              border-radius: 8px;
+              margin-left: 0.3in;
+            "
+            class="btn"
+            onclick="fetchAbsentees()"
+          >
+            Get Absentees
+          </button>
+        </div>
+      </div>
+
+      <!-- Absentee Table -->
+      <table id="absenteeTable" class="table table-bordered">
+        <thead class="table-dark">
+          <tr>
+            <th>S.No</th>
+            <th>Name</th>
+            <th>Register No</th>
+            <th>Department</th>
+            <th>Section</th>
+            <th>Batch</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        let dateInput = document.getElementById("date");
+
+        // Set default value to current date
+        let today = new Date().toISOString().split("T")[0];
+        dateInput.value = today;
+      });
+
+      function fetchAbsentees() {
+        let date =
+          document.getElementById("date").value ||
+          new Date().toISOString().split("T")[0];
+        let department = document.getElementById("department").value;
+        let section = document.getElementById("section").value;
+
+        if (!date) {
+          alert("Please select a date!");
+          return;
+        }
+
+        $.ajax({
+          url: "fetch_absentees.php",
+          method: "POST",
+          data: { date: date, department: department, section: section },
+          dataType: "json",
+          success: function (response) {
+            let table = "";
+            if (response.status === "success") {
+              response.data.forEach((student, index) => {
+                table += `
+                                <tr>
+                                    <td>${index + 1}</td>
+                                    <td>${student.Uname}</td>
+                                    <td>${student.register_no}</td>
+                                    <td>${student.department}</td>
+                                    <td>${student.section}</td>
+                                    <td>${student.batch}</td>
+                                </tr>
+                            `;
+              });
+            } else {
+              table =
+                "<tr><td colspan='6' class='text-center'>No absentees found</td></tr>";
+            }
+
+            $("#absenteeTable tbody").html(table);
+            $("#absenteeTable").DataTable(); // Initialize DataTable
+          },
+          error: function (err) {
+            console.log("Error:", err);
+          },
+        });
+      }
+      fetchAbsentees();
+    </script>
+  </body>
+</html>

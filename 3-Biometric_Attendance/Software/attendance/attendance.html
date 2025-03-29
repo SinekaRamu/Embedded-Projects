@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Attendance Records</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <!--Datatable plugin CSS file -->
+    <link
+      rel="stylesheet"
+      href="https://cdn.datatables.net/1.10.22/css/jquery.dataTables.min.css"
+    />
+    <!--jQuery library file -->
+    <script
+      type="text/javascript"
+      src="https://code.jquery.com/jquery-3.5.1.js"
+    ></script>
+
+    <!--Datatable plugin JS library file -->
+    <script
+      type="text/javascript"
+      src="https://cdn.datatables.net/1.10.22/js/jquery.dataTables.min.js"
+    ></script>
+
+    <style>
+      body {
+        background-image: url("../assets/background.jpg");
+        background-size: cover; /* Makes sure the image covers the entire background */
+        background-position: center; /* Keeps the image centered */
+        background-attachment: fixed;
+      }
+      h2,
+      label,
+      input {
+        color: #fff;
+      }
+
+      .dataTables_wrapper,
+      .dataTables_info,
+      .dataTables_paginate,
+      .dataTables_length select {
+        color: #fff !important;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="container my-5">
+      <h2 class="text-center mb-4">Attendance Records</h2>
+      <div class="mb-3 float-end">
+        <div
+          style="
+            background-color: #9b33c1;
+            color: white;
+            border-radius: 8px;
+            margin-left: 0.3in;
+          "
+        >
+          <a
+            href="./absentees.html"
+            class="btn btn-lg w-100 btn-dim"
+            style="color: white"
+            >get absentees</a
+          >
+        </div>
+      </div>
+      <!-- Attendance Table -->
+      <table id="tableID" class="table table-bordered table-striped">
+        <thead class="table-dark">
+          <tr>
+            <th>S.No</th>
+            <th>Student Name</th>
+            <th>Register No</th>
+            <th>Section</th>
+            <th>Department</th>
+            <th>Batch</th>
+            <th>Date</th>
+            <th>Time</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+
+        <tbody id="attendanceTable">
+          <!-- Data will be inserted dynamically -->
+        </tbody>
+      </table>
+    </div>
+
+    <script>
+      document.addEventListener("DOMContentLoaded", fetchAttendance);
+
+      function fetchAttendance() {
+        fetch("read_attendance.php")
+          .then((response) => response.json())
+          .then((data) => {
+            let table = "";
+            if (data.status === "success") {
+              data.data.forEach((record, index) => {
+                table += `
+                          <tr>
+                            <td>${index + 1}</td>
+                            <td>${record.Uname}</td>
+                            <td>${record.register_no}</td>
+                            <td>${record.section}</td>
+                            <td>${record.department}</td>
+                            <td>${record.batch}</td>
+                            <td>${record.date}</td>
+                            <td>${record.time}</td>
+                            <td>
+                              <span class="badge ${
+                                record.status === "Present" ||
+                                record.status === "Late"
+                                  ? "bg-success"
+                                  : "bg-danger"
+                              }">
+                                ${record.status}
+                              </span>
+                            </td>
+                          </tr>
+                        `;
+              });
+            } else {
+              table =
+                "<tr><td colspan='9' class='text-center'>No attendance records found</td></tr>";
+            }
+
+            document.getElementById("attendanceTable").innerHTML = table;
+
+            // Initialize DataTable after data is loaded
+            initializeDataTable();
+          })
+          .catch((error) => console.error("Error fetching data:", error));
+      }
+
+      function initializeDataTable() {
+        // Destroy existing DataTable if it exists
+        if ($.fn.DataTable.isDataTable("#tableID")) {
+          $("#tableID").DataTable().destroy();
+        }
+
+        // Initialize new DataTable
+        var myTable = $("#tableID").DataTable({
+          columnDefs: [
+            {
+              // For the Status column (8th column, zero-based index)
+              targets: 8,
+              render: function (data, type, row) {
+                // For display and sorting, use the raw HTML
+                if (type === "display" || type === "sort") {
+                  return data;
+                }
+                // For filtering, use just the text content
+                return $(data).text();
+              },
+            },
+          ],
+        });
+
+        // Create filter dropdowns for each column
+        myTable
+          .columns()
+          .flatten()
+          .each(function (colID) {
+            var mySelectList = $(
+              "<select><option value=''>All</option></select>"
+            )
+              .appendTo(myTable.column(colID).header())
+              .on("change", function () {
+                myTable.column(colID).search($(this).val());
+                myTable.draw();
+              });
+
+            // Get unique values for the column
+            myTable
+              .column(colID, { search: "applied" })
+              .data()
+              .unique()
+              .sort()
+              .each(function (param) {
+                if (param) {
+                  // For the Status column, extract just the text
+                  var displayValue = param;
+                  if (colID === 8) {
+                    // Assuming Status is the 9th column (zero-based index 8)
+                    displayValue = $(param).text().trim();
+                  }
+                  mySelectList.append(
+                    $(
+                      '<option value="' +
+                        displayValue +
+                        '">' +
+                        displayValue +
+                        "</option>"
+                    )
+                  );
+                }
+              });
+          });
+      }
+    </script>
+  </body>
+</html>

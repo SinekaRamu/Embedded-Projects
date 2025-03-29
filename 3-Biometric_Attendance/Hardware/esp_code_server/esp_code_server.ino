@@ -28,12 +28,12 @@ Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 SoftwareSerial mySerial(Finger_Rx, Finger_Tx);
 Adafruit_Fingerprint finger = Adafruit_Fingerprint(&mySerial);
 
-const char *ssid = "Airtel_bala_4993";
-const char *password = "air70386";
+const char *ssid = "Idhaya";
+const char *password = "12340005";
 uint8_t id;
 String postData;
-String serverURL = "https://webroid.in/demo/idhayaattendance/register.php"; // Replace with your actual server URL
-String attendanceURL = "https://webroid.in/demo/idhayaattendance/mark_attendance.php";
+String serverURL = "https://webroid.in/demo/idhayaattendance/users/register.php"; // Replace with your actual server URL
+String attendanceURL = "https://webroid.in/demo/idhayaattendance/attendance/mark_attendance.php";
 
 // TESTING
 // String attendanceURL = "http://192.168.1.5/biometric/attendance/mark_attendance.php";
