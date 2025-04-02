@@ -16,13 +16,6 @@
     <script src="https://cdn.datatables.net/1.10.22/js/jquery.dataTables.min.js"></script>
     <style>
       body {
-        /* background: rgb(87, 13, 88);
-        background: radial-gradient(
-          at bottom right,
-          rgba(67, 14, 68, 1) 0%,
-          rgba(7, 5, 29, 0.714) 35%,
-          rgba(31, 4, 96, 1) 100%
-        ); */
         background-image: url("../assets/background.jpg");
         background-size: cover; /* Makes sure the image covers the entire background */
         background-position: center; /* Keeps the image centered */
@@ -99,13 +92,7 @@
     </div>
 
     <script>
-      document.addEventListener("DOMContentLoaded", function () {
-        let dateInput = document.getElementById("date");
-
-        // Set default value to current date
-        let today = new Date().toISOString().split("T")[0];
-        dateInput.value = today;
-      });
+      document.addEventListener("DOMContentLoaded", fetchAbsentees());
 
       function fetchAbsentees() {
         let date =
@@ -152,7 +139,7 @@
           },
         });
       }
-      fetchAbsentees();
+      
     </script>
   </body>
 </html>
