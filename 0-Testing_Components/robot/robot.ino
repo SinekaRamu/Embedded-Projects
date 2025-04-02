@@ -1,114 +1,98 @@
 #include "BluetoothSerial.h"
 
-String device_name = "ESP32-BT-Slave";
-
-// Check if Bluetooth is available
 #if !defined(CONFIG_BT_ENABLED) || !defined(CONFIG_BLUEDROID_ENABLED)
-#error Bluetooth is not enabled! Please run `make menuconfig` to and enable it
+#error Bluetooth is not enabled! Please run `make menuconfig` to enable it
 #endif
 
-// Check Serial Port Profile
-#if !defined(CONFIG_BT_SPP_ENABLED)
-#error Serial Port Profile for Bluetooth is not available or not enabled. It is only available for the ESP32 chip.
-#endif
+BluetoothSerial SerialBT;
 
-BluetoothSerial SerialBT; // RX, TX
+// Motor control pins
+#define ENA 16  // Left motor speed control (must be PWM capable)
+#define ENB 17  // Right motor speed control (must be PWM capable)
+#define IN1 5   // Left motor forward
+#define IN2 18  // Left motor backward
+#define IN3 19  // Right motor forward
+#define IN4 21  // Right motor backward
 
-#define ENA 16 // Speed control for Left motors
-#define ENB 17 // Speed control for Right motors
-#define IN1 5  // Left motor forward
-#define IN2 18 // Left motor backward
-#define IN3 19 // Right motor forward
-#define IN4 21 // Right motor backward
-
-void setup()
-{
+// setting PWM properties
+const int freq = 1000;
+const int resolution = 8;
+ 
+void setup() {
     Serial.begin(115200);
-    SerialBT.begin(device_name);
+    SerialBT.begin("ESP32-BT-Robot");
+
+    // Set motor control pins as outputs
     pinMode(ENA, OUTPUT);
     pinMode(ENB, OUTPUT);
     pinMode(IN1, OUTPUT);
     pinMode(IN2, OUTPUT);
     pinMode(IN3, OUTPUT);
     pinMode(IN4, OUTPUT);
+
+    ledcAttach(ENA, freq, resolution);
+    ledcAttach(ENB, freq, resolution);
+
+    // Initialize motors in stopped state
+    stopMotors();
+
+    Serial.println("Bluetooth Robot Ready!");
 }
 
-void loop()
-{
-    if (SerialBT.available())
-    {
+void loop() {
+    if (SerialBT.available()) {
+        char cmd = SerialBT.read();
+        Serial.println(cmd);
 
-        char val = SerialBT.read();
-        if (val == 'f')
-        {
-            Serial.println("Forward");
-            moveForward();
-        }
-        else if (val == 'b')
-        {
-            Serial.println("Backward");
-            moveBackward();
-        }
-        else if (val == 'l')
-        {
-            Serial.println("left");
-            turnLeft();
-        }
-        else if (val == 'r')
-        {
-            Serial.println("right");
-            turnRight();
-        }
-        else if (val == 's')
-        {
-            Serial.println("stop");
-            stopMotors();
+        switch (cmd) {
+            case 'f': moveForward(); break;
+            case 'b': moveBackward(); break;
+            case 'l': turnLeft(); break;
+            case 'r': turnRight(); break;
+            case 's': stopMotors(); break;
         }
     }
-}
+}`12q 
 
-void moveForward()
-{
-    analogWrite(ENA, 250); // Set motor speed (0-255)
-    analogWrite(ENB, 250);
+void moveForward() {
+    ledcWrite(ENA, 200); // Left motor speed (0-255)
+    ledcWrite(ENB, 200); // Right motor speed (0-255)
     digitalWrite(IN1, HIGH);
     digitalWrite(IN2, LOW);
     digitalWrite(IN3, HIGH);
     digitalWrite(IN4, LOW);
 }
 
-void moveBackward()
-{
-    analogWrite(ENB, 100);
-    analogWrite(ENB, 100);
+void moveBackward() {
+    ledcWrite(ENA, 200);
+    ledcWrite(ENB, 200);
     digitalWrite(IN1, LOW);
     digitalWrite(IN2, HIGH);
     digitalWrite(IN3, LOW);
     digitalWrite(IN4, HIGH);
 }
 
-void turnLeft()
-{
-    analogWrite(ENB, 150);
-    analogWrite(ENB, 150);
+void turnLeft() {
+    ledcWrite(ENA, 150);
+    ledcWrite(ENB, 150);
     digitalWrite(IN1, LOW);
     digitalWrite(IN2, HIGH);
     digitalWrite(IN3, HIGH);
     digitalWrite(IN4, LOW);
 }
 
-void turnRight()
-{
-    analogWrite(ENB, 150);
-    analogWrite(ENB, 150);
+void turnRight() {
+    ledcWrite(ENA, 150);
+    ledcWrite(ENB, 150);
     digitalWrite(IN1, HIGH);
     digitalWrite(IN2, LOW);
     digitalWrite(IN3, LOW);
     digitalWrite(IN4, HIGH);
 }
 
-void stopMotors()
-{
+void stopMotors() {
+    ledcWrite(ENA, 0);
+    ledcWrite(ENB, 0);
     digitalWrite(IN1, LOW);
     digitalWrite(IN2, LOW);
     digitalWrite(IN3, LOW);
