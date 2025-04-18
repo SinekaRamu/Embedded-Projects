@@ -83,8 +83,8 @@ void loop() {
 } 
 
 void moveForward() {
-    ledcWrite(ENA, 200); // Left motor speed (0-255)
-    ledcWrite(ENB, 200); // Right motor speed (0-255)
+    ledcWrite(ENA, 120); // Left motor speed (0-255)
+    ledcWrite(ENB, 120); // Right motor speed (0-255)
     digitalWrite(IN1, HIGH);
     digitalWrite(IN2, LOW);
     digitalWrite(IN3, HIGH);
@@ -92,8 +92,8 @@ void moveForward() {
 }
 
 void moveBackward() {
-    ledcWrite(ENA, 200);
-    ledcWrite(ENB, 200);
+    ledcWrite(ENA, 30);
+    ledcWrite(ENB, 30);
     digitalWrite(IN1, LOW);
     digitalWrite(IN2, HIGH);
     digitalWrite(IN3, LOW);
@@ -101,8 +101,8 @@ void moveBackward() {
 }
 
 void turnLeft() {
-    ledcWrite(ENA, 150);
-    ledcWrite(ENB, 150);
+    ledcWrite(ENA, 60);
+    ledcWrite(ENB, 60);
     digitalWrite(IN1, LOW);
     digitalWrite(IN2, HIGH);
     digitalWrite(IN3, HIGH);
@@ -110,8 +110,8 @@ void turnLeft() {
 }
 
 void turnRight() {
-    ledcWrite(ENA, 150);
-    ledcWrite(ENB, 150);
+    ledcWrite(ENA, 60);
+    ledcWrite(ENB, 60);
     digitalWrite(IN1, HIGH);
     digitalWrite(IN2, LOW);
     digitalWrite(IN3, LOW);
