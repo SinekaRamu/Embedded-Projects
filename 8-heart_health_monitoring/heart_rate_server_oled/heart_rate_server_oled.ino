@@ -1,4 +1,7 @@
+#include <SPI.h>
 #include <Wire.h>
+#include <Adafruit_GFX.h>
+#include <Adafruit_SSD1306.h>
 #include "MAX30105.h"
 #include "spo2_algorithm.h"
 #include <ESP8266WiFi.h>
@@ -6,6 +9,13 @@
 
 #define BUFFER_SIZE 100  // Increased buffer size for better accuracy
 #define FINGER_THRESHOLD 30000  // Adjust this based on your testing
+
+#define SCREEN_WIDTH 128 // OLED display width, in pixels
+#define SCREEN_HEIGHT 32 // OLED display height, in pixels
+
+#define OLED_RESET -1 // Reset pin not used
+#define SCREEN_ADDRESS 0x3C
+Adafruit_SSD1306 oled(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
 // Create your custom WiFi network
 const char* ssid = "MyHealth";
@@ -21,22 +31,47 @@ uint32_t redBuffer[BUFFER_SIZE];
 int32_t spo2, heartRate;
 int8_t validSPO2, validHeartRate;
 float temperature;
+int avgHR;
+
 // Moving average filter for HR
 const int HR_AVG_SIZE = 5;
 int hrBuffer[HR_AVG_SIZE] = {0};
 int hrIndex = 0;
+
+// Initialize OLED
+void setupOLED() {
+  if (!oled.begin(SSD1306_SWITCHCAPVCC, 0x3C)) { // I2C address 0x3C
+    Serial.println("OLED failed!");
+    while (1);
+  }
+  oled.clearDisplay();
+  oled.setTextSize(1);
+  oled.setTextColor(WHITE);
+  oled.setCursor(0, 0);
+  oled.println("Initializing...");
+  oled.display();
+}
 
 void setup()
 {
   Serial.begin(115200);
   Serial.println("Initializing...");
 
+  setupOLED();
+
   // Set ESP8266 as Access Point
   WiFi.softAP(ssid, password);
 
   Serial.println("Access Point Started");
   Serial.print("IP address: ");
-  Serial.println(WiFi.softAPIP()); // Typically 192.168.4.1
+  IPAddress myIP = WiFi.softAPIP(); // Typically 192.168.4.1
+
+  oled.setTextSize(1);
+  oled.setTextColor(WHITE);
+  oled.setCursor(0, 24);
+  oled.println(myIP);
+  oled.display();
+
 
   if (!particleSensor.begin(Wire, I2C_SPEED_FAST)) {
     Serial.println("MAX30105 was not found. Please check wiring/power.");
@@ -60,6 +95,30 @@ void setup()
   server.on("/data", handleData);  // JSON API for sensor data
   server.begin();
   Serial.println("HTTP server started");
+}
+
+void updateOLED() {
+  oled.clearDisplay();
+  oled.setCursor(0, 0);
+
+  // Display HR
+  oled.print("HR: ");
+  oled.print(avgHR);
+  oled.print(" bpm");
+
+  // Display SpO2 (next line)
+  oled.setCursor(0, 12);
+  oled.print("SpO2: ");
+  oled.print(spo2);
+  oled.print("%");
+
+  // Display Temperature (next line)
+  oled.setCursor(0, 24);
+  oled.print("Temp: ");
+  oled.print(temperature);
+  oled.print("C");
+
+  oled.display();
 }
 
 void loop() {
@@ -94,7 +153,7 @@ void loop() {
     hrBuffer[hrIndex] = heartRate;
     hrIndex = (hrIndex + 1) % HR_AVG_SIZE;
     
-    int avgHR = 0;
+    avgHR = 0;
     for (int i = 0; i < HR_AVG_SIZE; i++) avgHR += hrBuffer[i];
     avgHR /= HR_AVG_SIZE;
 
@@ -109,13 +168,14 @@ void loop() {
   Serial.print("Temperature: ");
   Serial.print(temperature);
   Serial.println("°C");
+  updateOLED();
 
   delay(1000);  // Longer delay between readings
 }
 
 void handleData() {
   String json = "{";
-  json += "\"hr\":" + String(heartRate) + ",";
+  json += "\"hr\":" + String(avgHR) + ",";
   json += "\"spo2\":" + String(spo2) + ",";
   json += "\"temp\":" + String(temperature);
   json += "}";
@@ -142,7 +202,7 @@ void handleRoot() {
           document.getElementById("hr").textContent = data.hr;
           document.getElementById("spo2").textContent = data.spo2;
           document.getElementById("temp").textContent = data.temp;
-          setTimeout(updateData, 2000); // Refresh every 2 sec
+          setTimeout(updateData, 10000); // Refresh every 2 sec
         });
     }
     window.onload = updateData;
