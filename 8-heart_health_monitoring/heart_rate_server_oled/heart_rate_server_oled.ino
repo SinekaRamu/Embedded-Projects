@@ -7,40 +7,35 @@
 #include <ESP8266WiFi.h>
 #include <ESP8266WebServer.h>
 
-#define BUFFER_SIZE 100  // Increased buffer size for better accuracy
-#define FINGER_THRESHOLD 30000  // Adjust this based on your testing
+#define BUFFER_SIZE 100
+#define FINGER_THRESHOLD 30000
 
-#define SCREEN_WIDTH 128 // OLED display width, in pixels
-#define SCREEN_HEIGHT 32 // OLED display height, in pixels
-
-#define OLED_RESET -1 // Reset pin not used
-#define SCREEN_ADDRESS 0x3C
+#define SCREEN_WIDTH 128
+#define SCREEN_HEIGHT 32
+#define OLED_RESET -1
 Adafruit_SSD1306 oled(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
-// Create your custom WiFi network
 const char* ssid = "MyHealth";
-const char* password = "123D56HI";  // Must be at least 8 characters
+const char* password = "123D56HI";
 
-// Create a web server on port 80
 ESP8266WebServer server(80);
 MAX30105 particleSensor;
 
+IPAddress myIP;
 uint32_t irBuffer[BUFFER_SIZE];
 uint32_t redBuffer[BUFFER_SIZE];
 
 int32_t spo2, heartRate;
 int8_t validSPO2, validHeartRate;
 float temperature;
-int avgHR;
+int avgHR, avgSPO;
 
-// Moving average filter for HR
 const int HR_AVG_SIZE = 5;
 int hrBuffer[HR_AVG_SIZE] = {0};
 int hrIndex = 0;
 
-// Initialize OLED
 void setupOLED() {
-  if (!oled.begin(SSD1306_SWITCHCAPVCC, 0x3C)) { // I2C address 0x3C
+  if (!oled.begin(SSD1306_SWITCHCAPVCC, 0x3C)) {
     Serial.println("OLED failed!");
     while (1);
   }
@@ -52,47 +47,37 @@ void setupOLED() {
   oled.display();
 }
 
-void setup()
-{
+void setup() {
   Serial.begin(115200);
   Serial.println("Initializing...");
 
   setupOLED();
+  delay(3000);
 
-  // Set ESP8266 as Access Point
   WiFi.softAP(ssid, password);
-
+  myIP = WiFi.softAPIP();
   Serial.println("Access Point Started");
   Serial.print("IP address: ");
-  IPAddress myIP = WiFi.softAPIP(); // Typically 192.168.4.1
+  Serial.println(myIP);
 
-  oled.setTextSize(1);
-  oled.setTextColor(WHITE);
+  oled.clearDisplay();
+  oled.setCursor(0, 0);
+  oled.println("WiFi AP Started");
   oled.setCursor(0, 24);
   oled.println(myIP);
   oled.display();
-
+  delay(3000);
 
   if (!particleSensor.begin(Wire, I2C_SPEED_FAST)) {
     Serial.println("MAX30105 was not found. Please check wiring/power.");
     while (1);
   }
 
-  byte ledBrightness = 60;    // Options: 0=Off to 255=50mA
-  byte sampleAverage = 8;     // Increased averaging for stability
-  byte ledMode = 2;           // Red + IR mode
-  byte sampleRate = 400;      // Higher sample rate
-  int pulseWidth = 411;       // Options: 69, 118, 215, 411
-  int adcRange = 4096;        // Options: 2048, 4096, 8192, 16384
-
-  particleSensor.setup(ledBrightness, sampleAverage, ledMode, sampleRate, pulseWidth, adcRange);
-  
-  // Enable AC filtering
+  particleSensor.setup(60, 8, 2, 400, 411, 4096);
   particleSensor.enableDIETEMPRDY();
 
-   // Define web server routes
-  server.on("/", handleRoot);       // Main page
-  server.on("/data", handleData);  // JSON API for sensor data
+  server.on("/", handleRoot);
+  server.on("/data", handleData);
   server.begin();
   Serial.println("HTTP server started");
 }
@@ -100,22 +85,22 @@ void setup()
 void updateOLED() {
   oled.clearDisplay();
   oled.setCursor(0, 0);
-
-  // Display HR
   oled.print("HR: ");
   oled.print(avgHR);
   oled.print(" bpm");
 
-  // Display SpO2 (next line)
   oled.setCursor(0, 12);
   oled.print("SpO2: ");
-  oled.print(spo2);
-  oled.print("%");
+  if (validSPO2) {
+    oled.print(avgSPO);
+    oled.print("%");
+  } else {
+    oled.print("--%");
+  }
 
-  // Display Temperature (next line)
   oled.setCursor(0, 24);
   oled.print("Temp: ");
-  oled.print(temperature);
+  oled.print(String(temperature, 1));
   oled.print("C");
 
   oled.display();
@@ -123,98 +108,101 @@ void updateOLED() {
 
 void loop() {
   server.handleClient();
+
   int32_t irValue = particleSensor.getIR();
-  
   if (irValue < FINGER_THRESHOLD) {
-    Serial.println("No finger detected. Place your finger on the sensor.");
+    Serial.println("No finger detected.");
+    oled.clearDisplay();
+    oled.setCursor(0, 0);
+    oled.print("NO FINGER DETECTED");
+    oled.setCursor(0, 24);
+    oled.println(myIP);
+    oled.display();
     delay(500);
     return;
   }
 
-  // Fill buffers
   for (int i = 0; i < BUFFER_SIZE; i++) {
     while (!particleSensor.available()) {
       particleSensor.check();
     }
-    
     redBuffer[i] = particleSensor.getRed();
     irBuffer[i] = particleSensor.getIR();
     particleSensor.nextSample();
-    
-    // Small delay to allow for sensor settling
     delay(10);
   }
 
-  // Calculate heart rate and SpO2
-  maxim_heart_rate_and_oxygen_saturation(irBuffer, BUFFER_SIZE, redBuffer, &spo2, &validSPO2, &heartRate, &validHeartRate);
+  maxim_heart_rate_and_oxygen_saturation(irBuffer, BUFFER_SIZE, redBuffer,
+                                         &spo2, &validSPO2, &heartRate, &validHeartRate);
 
-  // Validate and smooth HR
+  if(validSPO2){
+    avgSPO = spo2;
+  }
   if (validHeartRate) {
     hrBuffer[hrIndex] = heartRate;
     hrIndex = (hrIndex + 1) % HR_AVG_SIZE;
-    
     avgHR = 0;
     for (int i = 0; i < HR_AVG_SIZE; i++) avgHR += hrBuffer[i];
     avgHR /= HR_AVG_SIZE;
-
     Serial.print("HR=");
     Serial.print(avgHR);
     Serial.print(", SpO2=");
     Serial.println(spo2);
   } else {
-    Serial.println("Invalid reading. Hold steady.");
+    Serial.println("Invalid HR reading.");
   }
-  temperature = particleSensor.readTemperature();  // Returns temperature in °C
-  Serial.print("Temperature: ");
-  Serial.print(temperature);
-  Serial.println("°C");
-  updateOLED();
 
-  delay(1000);  // Longer delay between readings
+  temperature = particleSensor.readTemperature();
+  Serial.print("Temp: ");
+  Serial.print(temperature);
+  Serial.println(" C");
+
+  updateOLED();
+  delay(1000);
 }
 
 void handleData() {
   String json = "{";
   json += "\"hr\":" + String(avgHR) + ",";
-  json += "\"spo2\":" + String(spo2) + ",";
-  json += "\"temp\":" + String(temperature);
+  json += "\"spo2\":" + String(avgSPO) + ",";
+  json += "\"temp\":" + String(temperature, 1);
   json += "}";
   server.send(200, "application/json", json);
 }
 
 void handleRoot() {
   String html = R"=====(
-<!DOCTYPE html>
-<html>
-<head>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>ESP8266 Health Monitor</title>
-  <style>
-    body { font-family: Arial, sans-serif; text-align: center; margin-top: 50px; }
-    .sensor { font-size: 24px; margin: 20px; }
-    #hr, #spo2, #temp { font-weight: bold; color: #0066cc; }
-  </style>
-  <script>
-    function updateData() {
-      fetch("/data")
-        .then(response => response.json())
-        .then(data => {
-          document.getElementById("hr").textContent = data.hr;
-          document.getElementById("spo2").textContent = data.spo2;
-          document.getElementById("temp").textContent = data.temp;
-          setTimeout(updateData, 10000); // Refresh every 2 sec
-        });
-    }
-    window.onload = updateData;
-  </script>
-</head>
-<body>
-  <h1>ESP8266 Health Monitor</h1>
-  <div class="sensor">Heart Rate: <span id="hr">--</span> bpm</div>
-  <div class="sensor">SpO2: <span id="spo2">--</span> %</div>
-  <div class="sensor">Temperature: <span id="temp">--</span> °C</div>
-</body>
-</html>
-)=====";
+  <!DOCTYPE html>
+  <html>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>ESP8266 Health Monitor</title>
+    <style>
+      body { font-family: Arial, sans-serif; text-align: center; margin-top: 50px; }
+      .sensor { font-size: 24px; margin: 20px; }
+      #hr, #spo2, #temp { font-weight: bold; color: #0066cc; }
+    </style>
+    <script>
+      function updateData() {
+        fetch("/data")
+          .then(response => response.json())
+          .then(data => {
+            document.getElementById("hr").textContent = data.hr;
+            document.getElementById("spo2").textContent = data.spo2;
+            document.getElementById("temp").textContent = data.temp;
+            setTimeout(updateData, 10000); // Refresh every 2 sec
+          });
+      }
+      window.onload = updateData;
+    </script>
+  </head>
+  <body>
+    <h1>ESP8266 Health Monitor</h1>
+    <div class="sensor">Heart Rate: <span id="hr">--</span> bpm</div>
+    <div class="sensor">SpO2: <span id="spo2">--</span> %</div>
+    <div class="sensor">Temperature: <span id="temp">--</span> &#8451;</div>
+  </body>
+  </html>
+  )=====";
   server.send(200, "text/html", html);
 }

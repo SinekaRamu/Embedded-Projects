@@ -92,8 +92,8 @@ void moveForward() {
 }
 
 void moveBackward() {
-    ledcWrite(ENA, 30);
-    ledcWrite(ENB, 30);
+    ledcWrite(ENA, 80);
+    ledcWrite(ENB, 80);
     digitalWrite(IN1, LOW);
     digitalWrite(IN2, HIGH);
     digitalWrite(IN3, LOW);
@@ -101,8 +101,8 @@ void moveBackward() {
 }
 
 void turnLeft() {
-    ledcWrite(ENA, 60);
-    ledcWrite(ENB, 60);
+    ledcWrite(ENA, 80);
+    ledcWrite(ENB, 80);
     digitalWrite(IN1, LOW);
     digitalWrite(IN2, HIGH);
     digitalWrite(IN3, HIGH);
@@ -110,8 +110,8 @@ void turnLeft() {
 }
 
 void turnRight() {
-    ledcWrite(ENA, 60);
-    ledcWrite(ENB, 60);
+    ledcWrite(ENA, 80);
+    ledcWrite(ENB, 80);
     digitalWrite(IN1, HIGH);
     digitalWrite(IN2, LOW);
     digitalWrite(IN3, LOW);
