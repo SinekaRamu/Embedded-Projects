@@ -40,8 +40,17 @@ Robot will move according to voice send from bluetooth while moving forware if i
   - SDA - D21
   - SCL - D22
 
-## issues 1
+## issues
+
+### issue 1
 
 - if ultrasonic sensor detects any object it should stop working the robot, but it still robot run for 1 sec
 
-- Solution: using interrupt with one ultrasonic sensor 
+- Solution: using interrupt with one ultrasonic sensor
+
+### issue 2
+
+- Resume from the last command crashes with error `Guru Meditation Error: Core  1 panic'ed (StoreProhibited). Exception was unhandled.
+` 
+
+The crash is likely happening when your code tries to resume a previous movement command after obstacle detection, but it accidentally re-executes 'x' (stop command) or improperly tries to resume motion without proper motor setup or display handling.

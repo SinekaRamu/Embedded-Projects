@@ -23,6 +23,7 @@ BluetoothSerial SerialBT;
 #define IN4 23 // Right motor backward
 #define echoPin 15
 #define trigPin 4
+
 // setting PWM properties
 const int freq = 1000;
 const int resolution = 8;
@@ -31,8 +32,11 @@ volatile unsigned long echo_start = 0;
 volatile unsigned long echo_end = 0;
 volatile bool objectDetected = false;
 
+char lastCmd = 'x'; // Holds the last movement command
+
 void IRAM_ATTR echo_isr() {
   if (digitalRead(echoPin) == HIGH) {
+
     echo_start = micros();
   } else {
     echo_end = micros();
@@ -111,6 +115,7 @@ void updateDisplay(String message)
 
 void moveForward()
 {
+    updateDisplay("Moving Forward");
     ledcWrite(ENA, 120); // Left motor speed (0-255)
     ledcWrite(ENB, 120); // Right motor speed (0-255)
     digitalWrite(IN1, HIGH);
@@ -121,6 +126,7 @@ void moveForward()
 
 void moveBackward()
 {
+    updateDisplay("Moving Backward");
     ledcWrite(ENA, 80);
     ledcWrite(ENB, 80);
     digitalWrite(IN1, LOW);
@@ -131,6 +137,7 @@ void moveBackward()
 
 void turnLeft()
 {
+    updateDisplay("Turning Left");
     ledcWrite(ENA, 80);
     ledcWrite(ENB, 80);
     digitalWrite(IN1, LOW);
@@ -141,6 +148,7 @@ void turnLeft()
 
 void turnRight()
 {
+    updateDisplay("Turning Right");
     ledcWrite(ENA, 80);
     ledcWrite(ENB, 80);
     digitalWrite(IN1, HIGH);
@@ -151,6 +159,7 @@ void turnRight()
 
 void stopMotors()
 {
+    updateDisplay("Stopped");
     ledcWrite(ENA, 0);
     ledcWrite(ENB, 0);
     digitalWrite(IN1, LOW);
@@ -169,6 +178,22 @@ void loop() {
     objectDetected = false;
   }else{
     updateDisplay("NO Obstacle!");
+    delay(2000);
+    // Resume previous command
+  switch (lastCmd) {
+    case 'w':
+      moveForward();
+      break;
+    case 's':
+      moveBackward();
+      break;
+    case 'a':
+      turnLeft();
+      break;
+    case 'd':
+      turnRight();
+      break;
+  }
   }
 
   if (SerialBT.available()) {
@@ -177,25 +202,26 @@ void loop() {
 
     switch (cmd) {
       case 'w':
-        updateDisplay("Moving Forward");
         moveForward();
+        lastCmd = 'w';
         break;
       case 's':
-        updateDisplay("Moving Backward");
         moveBackward();
+        lastCmd = 's';
         break;
       case 'a':
-        updateDisplay("Turning Left");
         turnLeft();
+        lastCmd = 'a';
         break;
       case 'd':
-        updateDisplay("Turning Right");
         turnRight();
+        lastCmd = 'd';
         break;
       case 'x':
-        updateDisplay("Stopped");
         stopMotors();
+        lastCmd = 'x';
         break;
     }
+
   }
 }
