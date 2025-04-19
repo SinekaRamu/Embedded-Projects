@@ -32,7 +32,8 @@ volatile unsigned long echo_start = 0;
 volatile unsigned long echo_end = 0;
 volatile bool objectDetected = false;
 
-char lastCmd = 'x'; // Holds the last movement command
+char lastCmd = 'x'; // tracks last movement command
+bool wasStoppedByObstacle = false;
 
 void IRAM_ATTR echo_isr() {
   if (digitalRead(echoPin) == HIGH) {
@@ -115,7 +116,6 @@ void updateDisplay(String message)
 
 void moveForward()
 {
-    updateDisplay("Moving Forward");
     ledcWrite(ENA, 120); // Left motor speed (0-255)
     ledcWrite(ENB, 120); // Right motor speed (0-255)
     digitalWrite(IN1, HIGH);
@@ -126,7 +126,6 @@ void moveForward()
 
 void moveBackward()
 {
-    updateDisplay("Moving Backward");
     ledcWrite(ENA, 80);
     ledcWrite(ENB, 80);
     digitalWrite(IN1, LOW);
@@ -137,7 +136,6 @@ void moveBackward()
 
 void turnLeft()
 {
-    updateDisplay("Turning Left");
     ledcWrite(ENA, 80);
     ledcWrite(ENB, 80);
     digitalWrite(IN1, LOW);
@@ -148,7 +146,6 @@ void turnLeft()
 
 void turnRight()
 {
-    updateDisplay("Turning Right");
     ledcWrite(ENA, 80);
     ledcWrite(ENB, 80);
     digitalWrite(IN1, HIGH);
@@ -159,7 +156,6 @@ void turnRight()
 
 void stopMotors()
 {
-    updateDisplay("Stopped");
     ledcWrite(ENA, 0);
     ledcWrite(ENB, 0);
     digitalWrite(IN1, LOW);
@@ -175,53 +171,33 @@ void loop() {
   if (objectDetected) {
     stopMotors();
     updateDisplay("Obstacle!");
+    wasStoppedByObstacle = true;
     objectDetected = false;
+    return; // Early exit to avoid conflict
   }else{
-    updateDisplay("NO Obstacle!");
-    delay(2000);
-    // Resume previous command
-  switch (lastCmd) {
-    case 'w':
-      moveForward();
-      break;
-    case 's':
-      moveBackward();
-      break;
-    case 'a':
-      turnLeft();
-      break;
-    case 'd':
-      turnRight();
-      break;
-  }
+    if (wasStoppedByObstacle && lastCmd != 'x') {
+      switch (lastCmd) {
+        case 'w': moveForward(); updateDisplay("Resumed Forward"); break;
+        case 's': moveBackward(); updateDisplay("Resumed Backward"); break;
+        case 'a': turnLeft(); updateDisplay("Resumed Left"); break;
+        case 'd': turnRight(); updateDisplay("Resumed Right"); break;
+      }
+      wasStoppedByObstacle = false;
+    }
+    // updateDisplay(" No Obstacle");
   }
 
+  // Bluetooth command handler
   if (SerialBT.available()) {
     char cmd = SerialBT.read();
     Serial.println(cmd);
 
     switch (cmd) {
-      case 'w':
-        moveForward();
-        lastCmd = 'w';
-        break;
-      case 's':
-        moveBackward();
-        lastCmd = 's';
-        break;
-      case 'a':
-        turnLeft();
-        lastCmd = 'a';
-        break;
-      case 'd':
-        turnRight();
-        lastCmd = 'd';
-        break;
-      case 'x':
-        stopMotors();
-        lastCmd = 'x';
-        break;
+      case 'w': updateDisplay("Forward"); moveForward(); lastCmd = 'w'; break;
+      case 's': updateDisplay("Backward"); moveBackward(); lastCmd = 's'; break;
+      case 'a': updateDisplay("Left"); turnLeft(); lastCmd = 'a'; break;
+      case 'd': updateDisplay("Right"); turnRight(); lastCmd = 'd'; break;
+      case 'x': updateDisplay("Stopped"); stopMotors(); lastCmd = 'x'; break;
     }
-
   }
 }

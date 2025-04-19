@@ -51,6 +51,8 @@ Robot will move according to voice send from bluetooth while moving forware if i
 ### issue 2
 
 - Resume from the last command crashes with error `Guru Meditation Error: Core  1 panic'ed (StoreProhibited). Exception was unhandled.
-` 
+`
 
 The crash is likely happening when your code tries to resume a previous movement command after obstacle detection, but it accidentally re-executes 'x' (stop command) or improperly tries to resume motion without proper motor setup or display handling.
+
+- solution: display and motor handled separately and added condition for x to stop
