@@ -40,4 +40,8 @@ Robot will move according to voice send from bluetooth while moving forware if i
   - SDA - D21
   - SCL - D22
 
-#
+## issues 1
+
+- if ultrasonic sensor detects any object it should stop working the robot, but it still robot run for 1 sec
+
+- Solution: using interrupt with one ultrasonic sensor 

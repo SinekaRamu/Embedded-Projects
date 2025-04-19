@@ -23,7 +23,7 @@ BluetoothSerial SerialBT;
 #define IN4 23 // Right motor backward
 
 //Ultrasonic pin mapping
-const int TRIG_F = 34;
+const int TRIG_F = 32;
 const int ECHO_F = 35;
 const int TRIG_R = 4;
 const int ECHO_R = 15;
@@ -39,23 +39,10 @@ void setup()
     Serial.begin(115200);
     SerialBT.begin("ESP32-BT-Robot");
 
-    if (!display.begin(SSD1306_SWITCHCAPVCC, 0x3C))
-    {
-        Serial.println(F("OLED failed"));
-        for (;;)
-            ; // Don't proceed
-    }
-
-    display.clearDisplay();
-    display.setTextSize(1);
-    display.setTextColor(SSD1306_WHITE);
-    display.setCursor(0, 0);
-    display.println("ESP32 Ready");
-    display.display();
-    delay(5000);
-
-    pinMode(TRIG_F, OUTPUT); // Sets the trigPin as an Output
-    pinMode(ECHO_F, INPUT);  // Sets the echoPin as an Input
+    pinMode(TRIG_F, OUTPUT); 
+    pinMode(ECHO_F, INPUT);  
+    pinMode(TRIG_F, OUTPUT); 
+    pinMode(ECHO_F, INPUT); 
 
     // Set motor control pins as outputs
     pinMode(ENA, OUTPUT);
@@ -70,14 +57,30 @@ void setup()
 
     // Initialize motors in stopped state
     stopMotors();
+    setupOled();
+}
+
+void setupOled(){ 
+    if (!display.begin(SSD1306_SWITCHCAPVCC, 0x3C))
+    {
+        Serial.println(F("OLED failed"));
+        for (;;)
+            ; // Don't proceed
+    }
+    display.clearDisplay();
+    display.setTextSize(1);
+    display.setTextColor(SSD1306_WHITE);
+    display.setCursor(0, 0);
+    display.println("ESP32 Ready");
+    display.display();
+    delay(5000);
 
     display.setCursor(0, 12);
     display.print("Bluetooth name:");
     display.setCursor(0, 24);
     display.println("ESP32-BT-Robot");
     display.display();
-
-    Serial.println("Bluetooth Robot Ready!");
+    delay(5000);
 }
 
 int getDistance(int echoPin, int trigPin) {
@@ -141,7 +144,7 @@ void loop()
             turnRight();
             break;
         case 'x':
-            updateDisplay("Moving Stop");
+            updateDisplay("Stopped");
             stopMotors();
             break;
         }
