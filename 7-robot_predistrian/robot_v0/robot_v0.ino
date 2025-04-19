@@ -21,35 +21,54 @@ BluetoothSerial SerialBT;
 #define IN2 18 // Left motor backward
 #define IN3 19 // Right motor forward
 #define IN4 23 // Right motor backward
-#define echoPin 15
-#define trigPin 4
+
+// Ultrasonic pins
+#define TRIG_R 4      // Rear Trigger
+#define ECHO_R 15     // Rear Echo
+#define TRIG_F 32     // Front Trigger
+#define ECHO_F 35     // Front Echo
 
 // setting PWM properties
 const int freq = 1000;
 const int resolution = 8;
 
+volatile bool rearObstacle = false;
+volatile bool frontObstacle = false;
+
 volatile unsigned long echo_start = 0;
 volatile unsigned long echo_end = 0;
-volatile bool objectDetected = false;
 
 char lastCmd = 'x'; // tracks last movement command
 bool wasStoppedByObstacle = false;
 
-void IRAM_ATTR echo_isr() {
-  if (digitalRead(echoPin) == HIGH) {
-    echo_start = micros();
-  } else {
-    echo_end = micros();
-    unsigned long duration = echo_end - echo_start;
-    int distance = duration * 0.034 / 2;
+// void IRAM_ATTR echo_isr() {
+//   if (digitalRead(ECHO_R) == HIGH) {
+//     echo_start = micros();
+//   } else {
+//     echo_end = micros();
+//     unsigned long duration = echo_end - echo_start;
+//     int distance = duration * 0.034 / 2;
+//     if (distance <= 10) {
+//       rearObstacle = true;
+//     }
+//   }
+// }
 
-    if (distance <= 10) {
-      objectDetected = true;
-    }
-  }
-}
+// void IRAM_ATTR echo_isr() {
+//   if (digitalRead(ECHO_F) == HIGH) {
+//     echo_start = micros();
+//   } else {
+//     echo_end = micros();
+//     unsigned long duration = echo_end - echo_start;
+//     int distance = duration * 0.034 / 2;
 
-void triggerUltrasonic() {
+//     if (distance <= 10) {
+//       frontObstacle = true;
+//     }
+//   }
+// }
+
+void triggerUltrasonic(int trigPin) {
   digitalWrite(trigPin, LOW);
   delayMicroseconds(2);
   digitalWrite(trigPin, HIGH);
@@ -57,36 +76,45 @@ void triggerUltrasonic() {
   digitalWrite(trigPin, LOW);
 }
 
+int readDistance(int echoPin) {
+  long duration = pulseIn(echoPin, HIGH, 30000); // 30ms timeout
+  if (duration == 0) return 1000; // No echo received
+  int distance = duration * 0.034 / 2;
+  return distance;
+}
+
 void setup() {
   Serial.begin(115200);
   SerialBT.begin("ESP32-BT-Robot");
   
-  pinMode(trigPin, OUTPUT);
-  pinMode(echoPin, INPUT);
+  pinMode(TRIG_R, OUTPUT);
+  pinMode(ECHO_R, INPUT);
+  pinMode(TRIG_F, OUTPUT);
+  pinMode(ECHO_F, INPUT);
 
   // Set motor control pins as outputs
-    pinMode(ENA, OUTPUT);
-    pinMode(ENB, OUTPUT);
-    pinMode(IN1, OUTPUT);
-    pinMode(IN2, OUTPUT);
-    pinMode(IN3, OUTPUT);
-    pinMode(IN4, OUTPUT);
+  pinMode(ENA, OUTPUT);
+  pinMode(ENB, OUTPUT);
+  pinMode(IN1, OUTPUT);
+  pinMode(IN2, OUTPUT);
+  pinMode(IN3, OUTPUT);
+  pinMode(IN4, OUTPUT);
 
-    ledcAttach(ENA, freq, resolution);
-    ledcAttach(ENB, freq, resolution);
+  ledcAttach(ENA, freq, resolution);
+  ledcAttach(ENB, freq, resolution);
 
-    stopMotors();
-    setupOled();
-  
-    attachInterrupt(digitalPinToInterrupt(echoPin), echo_isr, CHANGE);
+  stopMotors();
+  setupOled();
+
+  // attachInterrupt(digitalPinToInterrupt(ECHO_F), echo_isr, CHANGE);
+  // attachInterrupt(digitalPinToInterrupt(ECHO_R), echo_isr, CHANGE);
 }
 
 void setupOled(){ 
     if (!display.begin(SSD1306_SWITCHCAPVCC, 0x3C))
     {
         Serial.println(F("OLED failed"));
-        for (;;)
-            ; // Don't proceed
+        while(true);
     }
     display.clearDisplay();
     display.setTextSize(1);
@@ -96,9 +124,10 @@ void setupOled(){
     display.display();
     delay(5000);
 
-    display.setCursor(0, 12);
+    display.clearDisplay();
+    display.setCursor(0, 0);
     display.print("Bluetooth name:");
-    display.setCursor(0, 24);
+    display.setCursor(0, 12);
     display.println("ESP32-BT-Robot");
     display.display();
     delay(5000);
@@ -164,39 +193,56 @@ void stopMotors()
 }
 
 void loop() {
-  triggerUltrasonic(); // Trigger periodically
-  delay(100);
+  //Trigger and read rear sensor
+  triggerUltrasonic(TRIG_R); 
+  int distR = readDistance(ECHO_R);
+  rearObstacle = (distR <= 10);
+  
+  // Trigger and read front sensor
+  triggerUltrasonic(TRIG_F);
+  int distF = readDistance(ECHO_F);
+  frontObstacle = (distF <= 10);
 
-  if (objectDetected) {
+  if (rearObstacle && lastCmd == 's') {
     stopMotors();
-    updateDisplay("Obstacle!");
+    updateDisplay("Rear Obstacle");
+    delay(2000);
     wasStoppedByObstacle = true;
-    objectDetected = false;
-    return; // Early exit to avoid conflict
-  }else{
-    if (wasStoppedByObstacle && lastCmd != 'x') {
-      switch (lastCmd) {
-        case 'w': moveForward(); updateDisplay("Resumed Forward"); break;
-        case 's': moveBackward(); updateDisplay("Resumed Backward"); break;
-        case 'a': turnLeft(); updateDisplay("Resumed Left"); break;
-        case 'd': turnRight(); updateDisplay("Resumed Right"); break;
-      }
-      wasStoppedByObstacle = false;
+    return;
+  }
+
+  if (frontObstacle && lastCmd == 'w') {
+    stopMotors();
+    updateDisplay("Front Obstacle");
+    delay(2000);
+    Serial.println("Trigger Pi Camera!");
+    wasStoppedByObstacle = true;
+    return;
+  }
+
+   if (wasStoppedByObstacle && !rearObstacle && !frontObstacle && lastCmd != 'x') {
+    switch (lastCmd) {
+      case 'w': moveForward(); updateDisplay("Resumed Forward"); break;
+      case 's': moveBackward(); updateDisplay("Resumed Backward"); break;
+      case 'a': turnLeft(); updateDisplay("Resumed Left"); break;
+      case 'd': turnRight(); updateDisplay("Resumed Right"); break;
     }
-    // updateDisplay(" No Obstacle");
+    wasStoppedByObstacle = false;
   }
 
   // Bluetooth command handler
   if (SerialBT.available()) {
     char cmd = SerialBT.read();
+    lastCmd = cmd;
     Serial.println(cmd);
 
     switch (cmd) {
-      case 'w': updateDisplay("Forward"); moveForward(); lastCmd = 'w'; break;
-      case 's': updateDisplay("Backward"); moveBackward(); lastCmd = 's'; break;
-      case 'a': updateDisplay("Left"); turnLeft(); lastCmd = 'a'; break;
-      case 'd': updateDisplay("Right"); turnRight(); lastCmd = 'd'; break;
-      case 'x': updateDisplay("Stopped"); stopMotors(); lastCmd = 'x'; break;
+      case 'w': updateDisplay("Forward"); moveForward(); break;
+      case 's': updateDisplay("Backward"); moveBackward(); break;
+      case 'a': updateDisplay("Left"); turnLeft(); break;
+      case 'd': updateDisplay("Right"); turnRight(); break;
+      case 'x': updateDisplay("Stopped"); stopMotors(); break;
     }
   }
+  delay(100);
 }
