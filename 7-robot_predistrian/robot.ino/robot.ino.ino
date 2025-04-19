@@ -22,14 +22,17 @@ BluetoothSerial SerialBT;
 #define IN3 19 // Right motor forward
 #define IN4 23 // Right motor backward
 
-const int trigPin = 2;
-const int echoPin = 4;
-long duration;
-int distance;
+//Ultrasonic pin mapping
+const int TRIG_F = 34;
+const int ECHO_F = 35;
+const int TRIG_R = 4;
+const int ECHO_R = 15;
 
 // setting PWM properties
 const int freq = 1000;
 const int resolution = 8;
+
+bool enableLogging = true; // Toggle logging on/off
 
 void setup()
 {
@@ -51,8 +54,8 @@ void setup()
     display.display();
     delay(5000);
 
-    pinMode(trigPin, OUTPUT); // Sets the trigPin as an Output
-    pinMode(echoPin, INPUT);  // Sets the echoPin as an Input
+    pinMode(TRIG_F, OUTPUT); // Sets the trigPin as an Output
+    pinMode(ECHO_F, INPUT);  // Sets the echoPin as an Input
 
     // Set motor control pins as outputs
     pinMode(ENA, OUTPUT);
@@ -77,6 +80,26 @@ void setup()
     Serial.println("Bluetooth Robot Ready!");
 }
 
+int getDistance(int echoPin, int trigPin) {
+    digitalWrite(trigPin, LOW);
+    delayMicroseconds(2);
+    digitalWrite(trigPin, HIGH);
+    delayMicroseconds(10);
+    digitalWrite(trigPin, LOW);
+    int duration = pulseIn(echoPin, HIGH);
+    int distance = duration * 0.034 / 2;
+
+    if (enableLogging) {
+        if(distance < 100) {
+          Serial.print((trigPin==TRIG_F)?"Distance1":"Distance2");
+          Serial.print(" measured: ");
+          Serial.print(distance);
+          Serial.println(" cm");
+        }
+    }
+    return distance;
+}
+
 void updateDisplay(String message)
 {
     display.clearDisplay();
@@ -89,30 +112,15 @@ void updateDisplay(String message)
 void loop()
 {
 
-    digitalWrite(trigPin, LOW);
-    delayMicroseconds(2);
-    // Sets the trigPin on HIGH state for 10 micro seconds
-    digitalWrite(trigPin, HIGH);
-    delayMicroseconds(10);
-    digitalWrite(trigPin, LOW);
-    // Reads the echoPin, returns the sound wave travel time in microseconds
-    duration = pulseIn(echoPin, HIGH);
-    // Calculating the distance
-    distance = duration * 0.034 / 2;
-    // Prints the distance on the Serial Monitor
-    Serial.print("Distance: ");
-    Serial.println(distance);
-    delay(50);
-
-    if (distance <= 10)
-    {
-        stopMotors();
-    }
+    int distanceF = getDistance(ECHO_F, TRIG_F);
+    int distanceR = getDistance(ECHO_R, TRIG_R);
 
     if (SerialBT.available())
     {
         char cmd = SerialBT.read();
-        Serial.println(cmd);
+        if(enableLogging){
+          Serial.println(cmd);
+        }
 
         switch (cmd)
         {

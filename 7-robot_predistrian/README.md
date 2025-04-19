@@ -39,3 +39,5 @@ Robot will move according to voice send from bluetooth while moving forware if i
   - GND - Gnd
   - SDA - D21
   - SCL - D22
+
+#
