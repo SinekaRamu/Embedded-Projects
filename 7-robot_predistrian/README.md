@@ -50,14 +50,16 @@ Robot will move according to voice send from bluetooth while moving forware if i
 
   - `sudo apt-get install libhdf5-dev -y && sudo apt-get install libhdf5-serial-dev -y && sudo apt-get install libatlas-base-dev -y && sudo apt-get install libjasper-dev -y && sudo apt-get install libqtgui4 -y && sudo apt-get install libqt4-test -y`
 
-- Now let's install Opencv for python, version is what I'm currently using
+- Now let's install Opencv for python, version is what I'm currently using.
 
+  - before that create a virtual environment to download opencv `python3 -m venv ~/cv`
+  - to activate `source ~/cv/bin/activate`
   - `pip3 install opencv-contrib-python==4.11.0.86`
   - OpenCV version - 4.11.0
 
 - wget https://raw.githubusercontent.com/shantnu/Webcam-Face-Detect/master/haarcascade_frontalface_default.xml - it's for face detection and we're not gonna use it!
 
-- Now We gonna download tensorflow `pip3 install tensorflow`
+- Now We gonna download tensorflow `pip3 install tensorflow` and numpy
 
 - Download MobileNet SSD Model and Prototxt
 
@@ -85,6 +87,55 @@ ls -lh - displays the hidden files
 - Checking pi camera using the command `libcamera-still -o test.jpg`
 
 - Caffe model working with libcamera and openCV
+
+- Working with Audio jack
+
+```
+sudo raspi-config  # Set audio output to "3.5mm jack"
+speaker-test -t sine -f 440  # Test speaker - I heard a beep sound
+
+```
+
+- now text to speech testing
+
+```
+sudo apt install espeak
+espeak "Hello world"  # Test
+```
+
+    - python code
+
+    ```
+    import subprocess
+
+    def speak(text, voice="en", speed=120, pitch=30):
+    """
+    Uses espeak to convert text to speech.
+    Args:
+        text (str): Text to speak.
+        voice (str): Language/voice (e.g., 'en' for English).
+        speed (int): Words per minute.
+        pitch (int): Pitch (0-99).
+    """
+    subprocess.run([
+        "espeak",
+        f"-v{voice}+f{pitch}",  # e.g., "-ven+f3" for English female voice
+        f"-s{speed}",
+        text
+    ])
+    ```
+
+- To increase the speaker voice
+
+```
+# adjust volume with alsamixer
+alsamixer
+
+# this opens the new page where u can change the volume
+- Press F6, select bcm2835 Headphones
+- Increase volume with arrow keys (aim for ~80%).
+- Press Esc to exit.
+```
 
 ## issues
 
