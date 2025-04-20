@@ -72,6 +72,7 @@ wget https://huggingface.co/spaces/Imran606/cds/resolve/main/MobileNetSSD_deploy
 wget https://gist.githubusercontent.com/mm-aditya/797a3e7ee041ef88cd4d9e293eaacf9f/raw/3d2765b625f1b090669a05d0b3e79b2907677e86/MobileNetSSD_deploy.prototxt
 
 ```
+
 - To check the file use command
 
 ```
@@ -80,7 +81,10 @@ pwd - shows the current folder path
 ls -lh - displays the hidden files
 
 ```
+
 - Checking pi camera using the command `libcamera-still -o test.jpg`
+
+- Caffe model working with libcamera and openCV
 
 ## issues
 
