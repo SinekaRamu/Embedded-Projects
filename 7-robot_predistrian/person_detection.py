@@ -14,6 +14,10 @@ CLASSES = ["background", "aeroplane", "bicycle", "bird", "boat",
            "dog", "horse", "motorbike", "person", "pottedplant", "sheep",
            "sofa", "train", "tvmonitor"]
 
+# audio jack
+def speak(text):
+    subprocess.run(["espeak", "-ven+f3", "-s120", text])
+
 # Libcamera command (adjust settings for clarity)
 def capture_libcamera_frame():
     cmd = [
@@ -52,11 +56,13 @@ try:
         net.setInput(blob)
         detections = net.forward()
 
+        detected_img = ""
         # Draw bounding boxes
         for i in range(detections.shape[2]):
             confidence = detections[0, 0, i, 2]
             if confidence > 0.2:  # Confidence threshold
                 class_id = int(detections[0, 0, i, 1])
+                detected_img = CLASSES[class_id]
                 box = detections[0, 0, i, 3:7] * [frame.shape[1], frame.shape[0], frame.shape[1], frame.shape[0]]
                 (left, top, right, bottom) = box.astype("int")
                 cv2.rectangle(frame, (left, top), (right, bottom), (0, 255, 0), 2)
@@ -65,6 +71,7 @@ try:
                            cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
 
         # Display output
+        speak(detected_img)
         cv2.imshow("Libcamera + MobileNet-SSD", frame)
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break

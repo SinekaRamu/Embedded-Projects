@@ -20,10 +20,11 @@ Robot will move according to voice send from bluetooth while moving forware if i
 
 - Ultrasonic sensor
 
-  - trigFront GPIO 22
-  - echoFront GPIO 23
-  - trigBack GPIO 22
-  - echoBack GPIO 23
+  - Vin - 5V esp Vin
+  - TRIG_R 4 // Rear Trigger
+  - ECHO_R 15 // Rear Echo
+  - TRIG_F 32 // Front Trigger
+  - ECHO_F 35 // Front Echo
 
 - Motor Control
 
@@ -35,10 +36,16 @@ Robot will move according to voice send from bluetooth while moving forware if i
   - IN4 23 (D15) // Right motor backward
 
 - OLED display
+
   - Vin - 3.3V
   - GND - Gnd
   - SDA - D21
   - SCL - D22
+
+- With Raspberry pi
+  - GPIO 14 (UART_TXD0) - esp GPIO3 RXD0
+  - GPIO 15 (UART_RXD0) - esp GPIO1 TXD0
+  - Pi Gnd - esp Gnd
 
 ## Raspberry pi setup
 
@@ -135,6 +142,32 @@ alsamixer
 - Press F6, select bcm2835 Headphones
 - Increase volume with arrow keys (aim for ~80%).
 - Press Esc to exit.
+```
+
+## UART communication between Pi 4 and ESP32
+
+```raspi_uart.py
+
+import serial
+ser = serial.Serial("/dev/ttyAMA0", baudrate=115200, timeout=1)
+ser.write(b"Hello ESP32!\n")
+print("ESP32 replied:", ser.readline().decode())
+```
+
+```esp_uart.py
+
+void setup() {
+  Serial.begin(115200);  // Debugging over USB
+  Serial2.begin(115200, SERIAL_8N1, 16, 17);  // RX=16, TX=17
+}
+
+void loop() {
+  if (Serial2.available()) {
+    String msg = Serial2.readStringUntil('\n');
+    Serial.println("[RPi] " + msg);  // Print to USB serial
+    Serial2.println("ACK: " + msg);  // Reply to RPi
+  }
+}
 ```
 
 ## issues
