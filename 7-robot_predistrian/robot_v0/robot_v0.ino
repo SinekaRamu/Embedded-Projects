@@ -1,3 +1,4 @@
+#include <HardwareSerial.h>
 #include "BluetoothSerial.h"
 #include <Wire.h>
 #include <Adafruit_GFX.h>
@@ -15,8 +16,8 @@ Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 BluetoothSerial SerialBT;
 
 // Motor control pins
-#define ENA 16 // Left motor speed control (must be PWM capable)
-#define ENB 17 // Right motor speed control (must be PWM capable)
+#define ENA 25 // Left motor speed control (must be PWM capable)
+#define ENB 26 // Right motor speed control (must be PWM capable)
 #define IN1 5  // Left motor forward
 #define IN2 18 // Left motor backward
 #define IN3 19 // Right motor forward
@@ -41,33 +42,6 @@ volatile unsigned long echo_end = 0;
 char lastCmd = 'x'; // tracks last movement command
 bool wasStoppedByObstacle = false;
 
-// void IRAM_ATTR echo_isr() {
-//   if (digitalRead(ECHO_R) == HIGH) {
-//     echo_start = micros();
-//   } else {
-//     echo_end = micros();
-//     unsigned long duration = echo_end - echo_start;
-//     int distance = duration * 0.034 / 2;
-//     if (distance <= 10) {
-//       rearObstacle = true;
-//     }
-//   }
-// }
-
-// void IRAM_ATTR echo_isr() {
-//   if (digitalRead(ECHO_F) == HIGH) {
-//     echo_start = micros();
-//   } else {
-//     echo_end = micros();
-//     unsigned long duration = echo_end - echo_start;
-//     int distance = duration * 0.034 / 2;
-
-//     if (distance <= 10) {
-//       frontObstacle = true;
-//     }
-//   }
-// }
-
 void triggerUltrasonic(int trigPin) {
   digitalWrite(trigPin, LOW);
   delayMicroseconds(2);
@@ -85,6 +59,7 @@ int readDistance(int echoPin) {
 
 void setup() {
   Serial.begin(115200);
+  Serial2.begin(115200, SERIAL_8N1, 16, 17);
   SerialBT.begin("ESP32-BT-Robot");
   
   pinMode(TRIG_R, OUTPUT);
@@ -106,8 +81,6 @@ void setup() {
   stopMotors();
   setupOled();
 
-  // attachInterrupt(digitalPinToInterrupt(ECHO_F), echo_isr, CHANGE);
-  // attachInterrupt(digitalPinToInterrupt(ECHO_R), echo_isr, CHANGE);
 }
 
 void setupOled(){ 
@@ -214,8 +187,12 @@ void loop() {
   if (frontObstacle && lastCmd == 'w') {
     stopMotors();
     updateDisplay("Front Obstacle");
-    delay(2000);
-    Serial.println("Trigger Pi Camera!");
+    delay(1000);
+    
+    // Send detection trigger to Pi
+    Serial2.println("DETECT");  // Send as newline-terminated string 
+    delay(5000);
+    
     wasStoppedByObstacle = true;
     return;
   }
