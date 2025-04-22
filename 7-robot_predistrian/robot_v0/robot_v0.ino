@@ -78,6 +78,9 @@ void setup() {
   ledcAttach(ENA, freq, resolution);
   ledcAttach(ENB, freq, resolution);
 
+  ledcWrite(ENA, 120);
+  ledcWrite(ENB, 120);
+
   stopMotors();
   setupOled();
 
@@ -117,8 +120,6 @@ void updateDisplay(String message)
 
 void moveForward()
 {
-    ledcWrite(ENA, 120); // Left motor speed (0-255)
-    ledcWrite(ENB, 120); // Right motor speed (0-255)
     digitalWrite(IN1, HIGH);
     digitalWrite(IN2, LOW);
     digitalWrite(IN3, HIGH);
@@ -127,8 +128,6 @@ void moveForward()
 
 void moveBackward()
 {
-    ledcWrite(ENA, 80);
-    ledcWrite(ENB, 80);
     digitalWrite(IN1, LOW);
     digitalWrite(IN2, HIGH);
     digitalWrite(IN3, LOW);
@@ -137,8 +136,6 @@ void moveBackward()
 
 void turnLeft()
 {
-    ledcWrite(ENA, 80);
-    ledcWrite(ENB, 80);
     digitalWrite(IN1, LOW);
     digitalWrite(IN2, HIGH);
     digitalWrite(IN3, HIGH);
@@ -147,8 +144,6 @@ void turnLeft()
 
 void turnRight()
 {
-    ledcWrite(ENA, 80);
-    ledcWrite(ENB, 80);
     digitalWrite(IN1, HIGH);
     digitalWrite(IN2, LOW);
     digitalWrite(IN3, LOW);
@@ -157,8 +152,6 @@ void turnRight()
 
 void stopMotors()
 {
-    ledcWrite(ENA, 0);
-    ledcWrite(ENB, 0);
     digitalWrite(IN1, LOW);
     digitalWrite(IN2, LOW);
     digitalWrite(IN3, LOW);

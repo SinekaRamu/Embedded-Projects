@@ -170,6 +170,25 @@ void loop() {
 }
 ```
 
+## Run the Code while boot
+
+`@reboot /home/pi/your_project_folder/venv/bin/python /home/pi/your_project_folder/detection.py >> /home/pi/detection.log 2>&1`
+
+- To check the path file working or not
+  `chmod +x /home/ediylabs/Desktop/opencv/mobilenet-ssd/main.p`
+
+- Using systemd for reboot
+
+`sudo nano /etc/systemd/system/detectperson.service`
+
+- now enable and start the service
+
+```
+ sudo systemctl daemon-reload
+ sudo systemctl enable crackdetect.service
+ sudo systemctl start crackdetect.service
+```
+
 ## issues
 
 ### issue 1

@@ -92,7 +92,6 @@ try:
         # Low-power delay (adjust as needed)
         time.sleep(0.1)
         cv2.destroyAllWindows()
-        ser.close()
 
 finally:
     cv2.destroyAllWindows()
