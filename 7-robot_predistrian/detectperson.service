@@ -1,0 +1,19 @@
+[Unit]
+Description=Person Detection Robot
+After=network.target
+Wants=network.target
+
+[Service]
+Type=simple
+User=ediylabs
+WorkingDirectory=/home/ediylabs/mobilenet-ssd
+ExecStart=bin/bash -c 'source /home/pi/cv/bin/activate && python /home/ediylabs>
+Restart=always
+RestartSec=5s
+Environment="Display=:0"
+Environment="XAUTHORITY=/home/ediylabs/.Xauthority"
+Environment="PLUSE_SERVER=none"
+Environment="AUDIODEV=hw:0,0"
+
+[Install]
+WantedBy=multi-user.target

@@ -189,6 +189,15 @@ void loop() {
  sudo systemctl start crackdetect.service
 ```
 
+- To check the service status `sudo systemctl status detectperson.service`
+- To vie the output `journalctl -u detectperson.service`
+
+- If made changes to service follow this steps:
+  - Open the file `sudo nano /etc/systemd/system/detectperson.service`
+  - reload the daemon ` sudo systemctl daemon-reload`
+  - start the service `sudo systemctl start detectperson.service`
+  - check the status `sudo systemctl status detectperson.service`
+
 ## issues
 
 ### issue 1
