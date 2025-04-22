@@ -161,6 +161,16 @@ void handleCrackDetection(){
     Serial.print(manualLat);
     Serial.print(" | Lng: ");
     Serial.println(manualLng);
+    if (Serial.available()) {
+      String msg = Serial.readStringUntil('\n');
+      if(msg == "CONFIRMED"){
+        lcd.clear();
+        lcd.setCursor(0, 0);
+        lcd.print("Email sent");
+        lcd.setCursor(0, 1);
+        lcd.print("successfully");
+      }
+    }
   }
 
   delay(5000);
