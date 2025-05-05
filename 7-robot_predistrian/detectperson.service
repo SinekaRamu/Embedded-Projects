@@ -7,8 +7,8 @@ Wants=network.target
 Type=simple
 User=ediylabs
 WorkingDirectory=/home/ediylabs/mobilenet-ssd
-ExecStart=bin/bash -c 'source /home/pi/cv/bin/activate && python /home/ediylabs>
-Restart=always
+ExecStart=bin/bash -c 'source /home/ediylabs/cv/bin/activate && python /home/ediylabs/mobilenet-ssd/main_working.py'
+Restart=on-failure
 RestartSec=5s
 Environment="Display=:0"
 Environment="XAUTHORITY=/home/ediylabs/.Xauthority"

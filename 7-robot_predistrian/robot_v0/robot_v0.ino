@@ -78,8 +78,8 @@ void setup() {
   ledcAttach(ENA, freq, resolution);
   ledcAttach(ENB, freq, resolution);
 
-  ledcWrite(ENA, 120);
-  ledcWrite(ENB, 120);
+  ledcWrite(ENA, 140);
+  ledcWrite(ENB, 140);
 
   stopMotors();
   setupOled();
@@ -140,6 +140,8 @@ void turnLeft()
     digitalWrite(IN2, HIGH);
     digitalWrite(IN3, HIGH);
     digitalWrite(IN4, LOW);
+    delay(3000);
+    stopMotors();
 }
 
 void turnRight()
@@ -148,6 +150,8 @@ void turnRight()
     digitalWrite(IN2, LOW);
     digitalWrite(IN3, LOW);
     digitalWrite(IN4, HIGH);
+    delay(3000);
+    stopMotors();
 }
 
 void stopMotors()

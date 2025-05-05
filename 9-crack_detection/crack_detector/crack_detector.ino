@@ -152,10 +152,10 @@ void handleCrackDetection(){
     lcd.clear();
     lcd.setCursor(0, 0);
     lcd.print("Lat:");
-    lcd.print(String(manualLat));
+    lcd.print(String(manualLat).substring(0, 9));
     lcd.setCursor(0, 1);
     lcd.print("Lng:");
-    lcd.print(String(manualLng));
+    lcd.print(String(manualLng).substring(0, 9));
 
     Serial.print("Lat: ");
     Serial.print(manualLat);
@@ -169,13 +169,14 @@ void handleCrackDetection(){
         lcd.print("Email sent");
         lcd.setCursor(0, 1);
         lcd.print("successfully");
+        // Resume movement
+        analogWrite(enablePin, 100);
+        digitalWrite(forwardPin, HIGH);
       }
     }
   }
 
   delay(5000);
 
-  // Resume movement
-  analogWrite(enablePin, 100);
-  digitalWrite(forwardPin, HIGH);
+  
 }
