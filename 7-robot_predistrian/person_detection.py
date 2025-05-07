@@ -82,7 +82,6 @@ try:
                         cv2.putText(frame, label, (left, top - 10), 
                                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
 
-
                 speak(f"Detected {detected_img}")
                 
                 # Display (optional)
