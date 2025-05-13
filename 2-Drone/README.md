@@ -4,11 +4,11 @@
 
 Earthquakes cause massive destruction and disrupt emergency response operations. A rapid and autonomous system for deploying drones in response to seismic activity can significantly aid in search and rescue missions. This project presents a vibration-based drone takeoff system that detects earthquake tremors using an MPU6050 sensor and autonomously initiates a drone takeoff sequence for aerial surveillance and emergency response.
 
-2. System Overview
+## 2. System Overview
 
 The system consists of an MPU6050 accelerometer and gyroscope to detect vibrations and determine earthquake intensity. When vibrations exceed a predefined threshold, the system activates an HC-12 wireless module to send a takeoff signal to a drone, which is then stabilized using a PID controller.
 
-3. Components Used in Drone
+## 3. Components Used in Drone
 
 - Microcontroller: Arduino Uno
 
@@ -24,7 +24,7 @@ The system consists of an MPU6050 accelerometer and gyroscope to detect vibratio
 
 - Power Source: Li-Po battery
 
-Components used in Transmitter side
+## 4. Components used in Transmitter side
 
 - Arduino Nano
 - Vibration sensor
@@ -32,7 +32,7 @@ Components used in Transmitter side
 - LCD Display
 - Battery 9V
 
-4. Working Principle
+## 5. Working Principle
 
 - Vibration Detection:
 
@@ -52,7 +52,7 @@ Components used in Transmitter side
 
   - If excessive tilt is detected, corrections are applied automatically.
 
-  6. Expected Outcomes
+## 6. Expected Outcomes
 
 - Autonomous takeoff of drones upon earthquake detection.
 
@@ -60,7 +60,7 @@ Components used in Transmitter side
 
 - Real-time transmission of earthquake alerts.
 
-7. Future Enhancements
+## 7. Future Enhancements
 
 - Integration of GPS for location tracking.
 
@@ -68,11 +68,11 @@ Components used in Transmitter side
 
 - Implementation of ML-based earthquake classification.
 
-8. Conclusion
+## 8. Conclusion
 
 This system provides an efficient, real-time solution for deploying drones in the event of earthquakes. By leveraging vibration detection, wireless communication, and stabilization techniques, this project can improve emergency response and disaster management efforts.
 
 ## Important
 
 - Constant Current: 30A (Max 40A<10s). BEC: 5V 3A. Input Voltage: 11.1 ~ 11.7 V. Li-Po battery: 2S ~ 3S
-- Giving 12 V damaged the four esc and BLDC motor
+- if the motor casing and one of the three wire is shorted, then the motor is damaged. <b>remove the motor</b> or it will damage the ESC.
