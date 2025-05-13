@@ -1,33 +1,67 @@
+import tensorflow as tf
+from tensorflow.keras import layers, models
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
-from tensorflow.keras.applications import MobileNetV2
-from tensorflow.keras.models import Model
-from tensorflow.keras.layers import Dense, GlobalAveragePooling2D
-from tensorflow.keras.optimizers import Adam
 
-img_size = 224
-batch_size = 32
+# Data generators with augmentation for training
+train_datagen = ImageDataGenerator(
+    rescale=1./255,
+    rotation_range=20,
+    width_shift_range=0.2,
+    height_shift_range=0.2,
+    shear_range=0.2,
+    zoom_range=0.2,
+    horizontal_flip=True)
 
-train_gen = ImageDataGenerator(rescale=1./255).flow_from_directory(
-    'dataset/train', target_size=(img_size, img_size), batch_size=batch_size, class_mode='binary')
+val_test_datagen = ImageDataGenerator(rescale=1./255)
 
-val_gen = ImageDataGenerator(rescale=1./255).flow_from_directory(
-    'dataset/val', target_size=(img_size, img_size), batch_size=batch_size, class_mode='binary')
+# Flow from directory
+train_generator = train_datagen.flow_from_directory(
+    'dataset/train',
+    target_size=(128, 128),
+    batch_size=32,
+    class_mode='binary')
 
-base_model = MobileNetV2(include_top=False, weights='imagenet', input_shape=(img_size, img_size, 3))
-x = base_model.output
-x = GlobalAveragePooling2D()(x)
-# output = Dense(2, activation='softmax')(x)  # 2 classes: Large and Small
-output = Dense(1, activation='sigmoid')(x)  # Binary classification
-model = Model(inputs=base_model.input, outputs=output)
+val_generator = val_test_datagen.flow_from_directory(
+    'dataset/val',
+    target_size=(128, 128),
+    batch_size=32,
+    class_mode='binary')
 
-# Freeze base model
-for layer in base_model.layers:
-    layer.trainable = False
+test_generator = val_test_datagen.flow_from_directory(
+    'dataset/test',
+    target_size=(128, 128),
+    batch_size=32,
+    class_mode='binary')
 
-model.compile(optimizer=Adam(), loss='binary_crossentropy', metrics=['accuracy'])
+# Model architecture
+model = models.Sequential([
+    layers.Conv2D(16, (3, 3), activation='relu', input_shape=(128, 128, 3)),
+    layers.MaxPooling2D(2, 2),
+    layers.Conv2D(32, (3, 3), activation='relu'),
+    layers.MaxPooling2D(2, 2),
+    layers.Conv2D(64, (3, 3), activation='relu'),
+    layers.MaxPooling2D(2, 2),
+    layers.Flatten(),
+    layers.Dense(64, activation='relu'),
+    layers.Dense(1, activation='sigmoid')
+])
 
-model.fit(train_gen, validation_data=val_gen, epochs=5)
+model.compile(optimizer='adam',
+              loss='binary_crossentropy',
+              metrics=['accuracy'])
+
+# Train the model
+history = model.fit(
+    train_generator,
+    steps_per_epoch=train_generator.samples // train_generator.batch_size,
+    epochs=15,
+    validation_data=val_generator,
+    validation_steps=val_generator.samples // val_generator.batch_size)
+
+# Evaluate
+test_loss, test_acc = model.evaluate(test_generator)
+print(f'Test accuracy: {test_acc}')
 
 # --- Save as .h5 file ---
-model.save('bird_classifier.h5')
+model.save('bird_classifier_v1.h5')
 print("✅ Model saved as 'bird_classifier.h5'")
