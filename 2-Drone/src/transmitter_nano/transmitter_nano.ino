@@ -60,26 +60,36 @@ void receiveMPUData()
     if (HC12.available())
     {
         String receivedData = HC12.readStringUntil('\n');
-        Serial.println("Received: " + receivedData);
+        lcd.clear();
+        lcd.print(receivedData);
 
         if (receivedData.startsWith(droneID))
         {
-            if (receivedData.indexOf("Hi") != -1) 
+            if (receivedData.indexOf("Hi") != -1)
             {
-                isFlying = true; // Drone is in flight
-                lcd.clear();
-                lcd.setCursor(0, 0);
-                lcd.print("Flying...");
-                delay(1000);
+                if (!isFlying)
+                {
+                    lcd.clear();
+                    lcd.setCursor(0, 0);
+                    lcd.print("Hi, Drone");
+                    delay(500);
+                }
+                isFlying = true;
                 extractMPUData(receivedData);
             }
-            else if (receivedData.indexOf("BYE") != -1) 
+            else if (receivedData.indexOf("BYE") != -1)
             {
-                isFlying = false; // Drone has landed
+                isFlying = false;
                 lcd.clear();
                 lcd.setCursor(0, 0);
+                lcd.print("BYE");
+                lcd.setCursor(0, 1);
                 lcd.print("Landed");
-                delay(2000);
+                delay(1000);
+                lcd.clear();
+                lcd.setCursor(0, 0);
+                lcd.print(" Drone System ");
+
             }
         }
     }
@@ -91,26 +101,32 @@ void SendDataToDrone(int currentState)
     {
         HC12.print(droneID);
         HC12.println("1");
-        receiveMPUData();
+        Serial.println("Sent: 1 (Takeoff)");
+        lcd.setCursor(0, 1);
+        lcd.print("sent Takeoff");
+        delay(1000);
     }
     else if (currentState == LOW && lastState == HIGH)
     {
         HC12.print(droneID);
         HC12.println("2");
-        lcd.clear();
-        lcd.setCursor(0, 0);
-        lcd.print("Landing...");
-        receiveMPUData();
+        Serial.println("Sent: 2 (Land)");
+        lcd.setCursor(0, 1);
+        lcd.print("sent stop    ");
+        delay(1000);
     }else if (currentState == HIGH)
     {
         lcd.setCursor(0, 1);
         lcd.print("Holding Altitude");
     }
-    else{
+
+    // Show sensor status only if drone is flying
+    if (isFlying)
+    {
         lcd.setCursor(0, 1);
-        lcd.print("  No Issue  ");
+        lcd.print("No Issue       ");
     }
-    delay(1000);
+
     lastState = currentState;
 }
 
@@ -118,15 +134,12 @@ void loop()
 {
     receiveMPUData();
 
-    // **2. Check sensor value every 5 seconds**
-    if (millis() - lastSensorCheck >= 10000)  
+    if (millis() - lastSensorCheck >= 5000)
     {
-        lastSensorCheck = millis(); // Update last checked time
-        lcd.clear();
-        lcd.setCursor(0, 0);
-        lcd.print("checking....");
-        int currentState = digitalRead(vibrationSensor); // Read sensor
-        SendDataToDrone(currentState); // Execute based on sensor data
+        lastSensorCheck = millis();
+        int currentState = digitalRead(vibrationSensor);
+        lcd.setCursor(0,1);
+        lcd.print("Checking....    ");
+        SendDataToDrone(currentState);
     }
 }
-

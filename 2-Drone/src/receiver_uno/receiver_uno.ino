@@ -69,10 +69,12 @@ void stopMotors()
         motor2.writeMicroseconds(throttle);
         motor3.writeMicroseconds(throttle);
         motor4.writeMicroseconds(throttle);
-
+        HC12.print("motor stoping..");
+        HC12.println("");
+        
         Serial.print("Throttle: ");
         Serial.println(throttle);
-        delay(5000);
+        delay(1000);
     }
 
     Serial.println("Motors Stopped");
@@ -89,15 +91,18 @@ void startMotors()
         motor2.writeMicroseconds(throttle);
         motor3.writeMicroseconds(throttle);
         motor4.writeMicroseconds(throttle);
+        HC12.print("motor starting..");
+        HC12.println("");
 
         Serial.print("Throttle: ");
         Serial.println(throttle);
-        delay(2000);
+        delay(1000);
     }
 }
 
 void loop()
-{
+{ 
+  
     readMPU6050(); // Read sensor data
     // sendSensorData();
     if (HC12.available())
